@@ -34,7 +34,7 @@ func NewBufferPool(numPages int) *BufferPool {
 }
 
 // Testing method -- iterate through all pages in the buffer pool
-// and call [Page.flushPage] on them. Does not need to be thread/transaction safe
+// and flush them using [DBFile.flushPage]. Does not need to be thread/transaction safe
 func (bp *BufferPool) FlushAllPages() {
 	for pageKey, pagePtr := range bp.Pages {
 		page := *pagePtr
