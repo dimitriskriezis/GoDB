@@ -1,5 +1,10 @@
 package godb
 
+// import (
+// 	godb "command-line-argumentsC:\\Users\\dimit\\Documents\\6.5381\\go-db-hw-2023\\godb\\buffer_pool.go"
+// 	godb "command-line-argumentsC:\\Users\\dimit\\Documents\\6.5381\\go-db-hw-2023\\godb\\types.go"
+// )
+
 //BufferPool provides methods to cache pages that have been read from disk.
 //It has a fixed capacity to limit the total amount of memory used by GoDB.
 //It is also the primary way in which transactions are enforced, by using page
@@ -14,19 +19,30 @@ const (
 )
 
 type BufferPool struct {
-	// TODO: some code goes here
+	Size  int
+	Pages map[any]*Page
+	Order []any
 }
 
 // Create a new BufferPool with the specified number of pages
 func NewBufferPool(numPages int) *BufferPool {
-	// TODO: some code goes here
-	return &BufferPool{}
+	return &BufferPool{
+		Size:  numPages,
+		Pages: map[any]*Page{},
+		Order: []any{},
+	}
 }
 
 // Testing method -- iterate through all pages in the buffer pool
 // and call [Page.flushPage] on them. Does not need to be thread/transaction safe
 func (bp *BufferPool) FlushAllPages() {
-	// TODO: some code goes here
+	for pageKey, pagePtr := range bp.Pages {
+		page := *pagePtr
+		dbfile := *page.getFile()
+		dbfile.flushPage(&page)
+		delete(bp.Pages, pageKey)
+	}
+	bp.Order = []any{}
 }
 
 // Abort the transaction, releasing locks. Because GoDB is FORCE/NO STEAL, none
@@ -62,6 +78,36 @@ func (bp *BufferPool) BeginTransaction(tid TransactionID) error {
 // one of the transactions in the deadlock]. You will likely want to store a list
 // of pages in the BufferPool in a map keyed by the [DBFile.pageKey].
 func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm RWPerm) (*Page, error) {
-	// TODO: some code goes here
-	return nil, nil
+	pageKey := file.pageKey(pageNo)
+	bpPage, ok := bp.Pages[pageKey]
+	// If page in buffer pool retrieve page from the buffer pool
+	if ok {
+		return bpPage, nil
+	}
+	// If page not in buffer pool
+	diskPage, diskReadError := file.readPage(pageNo)
+	if diskReadError != nil {
+		return nil, nil
+	}
+	// If buffer pool has space add diskPage to bp
+	if len(bp.Pages) < bp.Size {
+		bp.Pages[pageKey] = diskPage
+		bp.Order = append(bp.Order, pageKey)
+		return diskPage, nil
+	}
+	// Buffer pool doesn't have space. Get LRU clean page id and evict it. If none throw error
+	for i := 0; i < len(bp.Order); i++ {
+		currentPage := *bp.Pages[bp.Order[i]]
+		if !currentPage.isDirty() {
+			// Remove LRU
+			delete(bp.Pages, bp.Order[i])
+			bp.Order = append(bp.Order[:i], bp.Order[i+1:]...)
+			// Add current age
+			bp.Pages[pageKey] = diskPage
+			bp.Order = append(bp.Order, pageKey)
+			return diskPage, nil
+		}
+	}
+	// Buffer pool has only dirty entries
+	return nil, GoDBError{code: BufferPoolFullError, errString: "Buffer is full of dirty pages"}
 }
