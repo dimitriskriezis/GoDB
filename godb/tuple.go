@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"strings"
 
-	godb "command-line-argumentsC:\\Users\\dimit\\Documents\\6.5381\\go-db-hw-2023\\godb\\types.go"
 	"github.com/mitchellh/hashstructure/v2"
 )
 
@@ -164,7 +163,7 @@ type RecordID struct {
 func (t *Tuple) writeTo(b *bytes.Buffer) error {
 	for i := 0; i < len(t.Fields); i++ {
 		if _, ok := t.Fields[i].(StringField); ok {
-			padded_string := strings.Join([]string{t.Fields[i].Value, strings.Repeat("0", godb.StringLength-len(t.Fields[i].Value))}, "")
+			padded_string := strings.Join([]string{t.Fields[i].Value, strings.Repeat("0", StringLength-len(t.Fields[i].Value))}, "")
 			final_field := []byte(padded_string)
 			err := binary.Write(b, binary.LittleEndian, final_field)
 			if err != nil {
@@ -276,10 +275,10 @@ func (t *Tuple) compareField(t2 *Tuple, field Expr) (orderByState, error) {
 	if t2_err != nil {
 		return OrderedEqual, t2_err
 	}
-	if t1_value < t2_value {
+	if t1_value.Value < t2_value.Value {
 		return OrderedLessThan, nil
 	}
-	if t1_value > t2_value {
+	if t1_value.Value > t2_value.Value {
 		return OrderedGreaterThan, nil
 	}
 	return OrderedEqual, nil

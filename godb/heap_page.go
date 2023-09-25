@@ -126,7 +126,8 @@ func (h *heapPage) setDirty(dirty bool) {
 // Page method - return the corresponding HeapFile
 // for this page.
 func (p *heapPage) getFile() *DBFile {
-	return p.Hfile
+	var file DBFile = p.Hfile
+	return &file
 }
 
 // Allocate a new bytes.Buffer and write the heap page to it. Returns an error
