@@ -3,6 +3,7 @@ package godb
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"unsafe"
 )
 
@@ -82,18 +83,22 @@ func (h *heapPage) getNumSlots() int {
 		}
 		slotSize += fieldSize
 	}
-	return slotSize
+	remPageSize := PageSize - 8        // bytes after header
+	numSlots := remPageSize / slotSize //integer division will round down
+	return numSlots
 }
 
 // Insert the tuple into a free slot on the page, or return an error if there are
 // no free slots.  Set the tuples rid and return it.
 func (h *heapPage) insertTuple(t *Tuple) (recordID, error) {
-	for i := range h.UsedSlots {
-		if !h.UsedSlots[i] {
-			h.UsedSlots[i] = true
-			rid := RecordID{pageNo: h.pageNo, slot: i}
+	for j := range h.UsedSlots {
+		if !h.UsedSlots[j] {
+			h.UsedSlots[j] = true
+			rid := RecordID{pageNo: h.pageNo, slot: j}
 			t.Rid = rid
-			h.Slots[i] = t
+			h.Slots[j] = t
+			fmt.Println(*t)
+			h.setDirty(true)
 			return rid, nil
 		}
 	}
@@ -103,8 +108,12 @@ func (h *heapPage) insertTuple(t *Tuple) (recordID, error) {
 // Delete the tuple in the specified slot number, or return an error if
 // the slot is invalid
 func (h *heapPage) deleteTuple(rid recordID) error {
+	Rid, ok := rid.(RecordID)
+	if !ok {
+		fmt.Println("Error")
+	}
 	for slot := range h.Slots {
-		if slot == rid.slot {
+		if slot == Rid.slot {
 			delete(h.Slots, slot)
 			h.UsedSlots[slot] = false
 			return nil
@@ -120,7 +129,7 @@ func (h *heapPage) isDirty() bool {
 
 // Page method - mark the page as dirty
 func (h *heapPage) setDirty(dirty bool) {
-	h.Dirty = true
+	h.Dirty = dirty
 }
 
 // Page method - return the corresponding HeapFile
@@ -140,24 +149,29 @@ func (h *heapPage) toBuffer() (*bytes.Buffer, error) {
 	b := new(bytes.Buffer)
 	// write number of slots to buffer
 	numberOfSlots := h.getNumSlots()
-	nos_error := binary.Write(b, binary.LittleEndian, numberOfSlots)
+	nos_error := binary.Write(b, binary.LittleEndian, (int32)(numberOfSlots))
 	if nos_error != nil {
 		return nil, nos_error
 	}
 	// write number of used slots to buffer
 	numberOfUsedSlots := len(h.Slots)
-	nous_error := binary.Write(b, binary.LittleEndian, numberOfUsedSlots)
+	// fmt.Println(numberOfUsedSlots)
+	nous_error := binary.Write(b, binary.LittleEndian, (int32)(numberOfUsedSlots))
 	if nous_error != nil {
 		return nil, nous_error
 	}
-	for _, tuple := range h.Slots {
+	iter := h.tupleIter()
+	for {
+		tuple, _ := iter()
+		if tuple == nil {
+			break
+		}
 		tuple_error := tuple.writeTo(b)
 		if tuple_error != nil {
 			return nil, tuple_error
 		}
 	}
-
-	return nil, nil //replace me
+	return b, nil //replace me
 
 }
 
@@ -165,14 +179,15 @@ func (h *heapPage) toBuffer() (*bytes.Buffer, error) {
 func (h *heapPage) initFromBuffer(buf *bytes.Buffer) error {
 	var numberOfSlots int32
 	var numberOfUsedSlots int32
-	binary.Read(buf, binary.LittleEndian, numberOfSlots)
-	binary.Read(buf, binary.LittleEndian, numberOfUsedSlots)
+	binary.Read(buf, binary.LittleEndian, &numberOfSlots)
+	binary.Read(buf, binary.LittleEndian, &numberOfUsedSlots)
 	for buf.Len() > 0 {
 		tuple, err := readTupleFrom(buf, h.Desc)
 		if err != nil {
 			return err
 		}
-		h.insertTuple(tuple)
+		rid, _ := h.insertTuple(tuple)
+		tuple.Rid = rid
 	}
 	return nil
 }

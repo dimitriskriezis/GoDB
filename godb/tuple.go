@@ -163,14 +163,16 @@ type RecordID struct {
 func (t *Tuple) writeTo(b *bytes.Buffer) error {
 	for i := 0; i < len(t.Fields); i++ {
 		if _, ok := t.Fields[i].(StringField); ok {
-			padded_string := strings.Join([]string{t.Fields[i].Value, strings.Repeat("0", StringLength-len(t.Fields[i].Value))}, "")
+			fieldValue := (t.Fields[i]).(StringField)
+			padded_string := strings.Join([]string{fieldValue.Value, strings.Repeat("0", StringLength-len(fieldValue.Value))}, "")
 			final_field := []byte(padded_string)
 			err := binary.Write(b, binary.LittleEndian, final_field)
 			if err != nil {
 				return err
 			}
 		} else {
-			err := binary.Write(b, binary.LittleEndian, t.Fields[i].Value)
+			fieldValue := (t.Fields[i]).(IntField)
+			err := binary.Write(b, binary.LittleEndian, fieldValue.Value)
 			if err != nil {
 				return err
 			}
@@ -201,21 +203,24 @@ func readTupleFrom(b *bytes.Buffer, desc *TupleDesc) (*Tuple, error) {
 			if str_err != nil {
 				return nil, str_err
 			}
-			strField := StringField{Value: string(bytes.TrimRight(byteArray, "\x00"))}
+			strField := StringField{Value: strings.TrimRight(string(byteArray), "\\00")}
 			tupleFields = append(tupleFields, strField)
 		} else { // Field is int
 			var intVal int64
-			int_error := binary.Read(b, binary.LittleEndian, intVal)
+			int_error := binary.Read(b, binary.LittleEndian, &intVal)
 			if int_error != nil {
 				return nil, int_error
 			}
-			tupleFields = append(tupleFields, IntField{Value: intVal})
+			intField := IntField{Value: intVal}
+			tupleFields = append(tupleFields, intField)
 		}
 	}
-	return &Tuple{
+	result := &Tuple{
 		Desc:   *desc,
 		Fields: tupleFields,
-	}, nil
+	}
+	fmt.Println()
+	return result, nil
 }
 
 // Compare two tuples for equality.  Equality means that the TupleDescs are equal
@@ -223,19 +228,22 @@ func readTupleFrom(b *bytes.Buffer, desc *TupleDesc) (*Tuple, error) {
 // the [TupleDesc.equals] method, but fields can be compared directly with equality
 // operators.
 func (t1 *Tuple) equals(t2 *Tuple) bool {
+	fmt.Println(t1)
+	fmt.Println(t2)
+	fmt.Println("")
 	if len(t1.Fields) != len(t2.Fields) {
 		return false
 	}
 	td_equality := t1.Desc.equals(&t2.Desc)
-	rid_equality := t1.Rid == t2.Rid
+	// rid_equality := t1.Rid == t2.Rid
 	field_equality := true
-	for i := 0; i <= len(t1.Fields); i++ {
+	for i := 0; i < len(t1.Fields); i++ {
 		if t1.Fields[i] != t2.Fields[i] {
 			field_equality = false
 		}
 	}
 
-	return td_equality && rid_equality && field_equality
+	return td_equality && field_equality
 }
 
 // Merge two tuples together, producing a new tuple with the fields of t2 appended to t1.
@@ -268,18 +276,36 @@ const (
 // expression on the supplied tuple.
 func (t *Tuple) compareField(t2 *Tuple, field Expr) (orderByState, error) {
 	t1_value, t1_err := field.EvalExpr(t)
+
 	if t1_err != nil {
 		return OrderedEqual, t1_err
 	}
-	t2_value, t2_err := field.EvalExpr(t)
+	t2_value, t2_err := field.EvalExpr(t2)
 	if t2_err != nil {
 		return OrderedEqual, t2_err
 	}
-	if t1_value.Value < t2_value.Value {
-		return OrderedLessThan, nil
-	}
-	if t1_value.Value > t2_value.Value {
-		return OrderedGreaterThan, nil
+
+	switch field.GetExprType().Ftype {
+	case IntType:
+		t1Val := t1_value.(IntField)
+		t2Val := t2_value.(IntField)
+		if t1Val.Value < t2Val.Value {
+			return OrderedLessThan, nil
+		}
+		if t1Val.Value > t2Val.Value {
+			return OrderedGreaterThan, nil
+		}
+		return OrderedEqual, nil
+	case StringType:
+		t1Val := t1_value.(StringField)
+		t2Val := t2_value.(StringField)
+		if t1Val.Value < t2Val.Value {
+			return OrderedLessThan, nil
+		}
+		if t1Val.Value > t2Val.Value {
+			return OrderedGreaterThan, nil
+		}
+		return OrderedEqual, nil
 	}
 	return OrderedEqual, nil
 }
