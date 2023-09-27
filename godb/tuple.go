@@ -219,7 +219,6 @@ func readTupleFrom(b *bytes.Buffer, desc *TupleDesc) (*Tuple, error) {
 		Desc:   *desc,
 		Fields: tupleFields,
 	}
-	fmt.Println()
 	return result, nil
 }
 
@@ -228,9 +227,6 @@ func readTupleFrom(b *bytes.Buffer, desc *TupleDesc) (*Tuple, error) {
 // the [TupleDesc.equals] method, but fields can be compared directly with equality
 // operators.
 func (t1 *Tuple) equals(t2 *Tuple) bool {
-	fmt.Println(t1)
-	fmt.Println(t2)
-	fmt.Println("")
 	if len(t1.Fields) != len(t2.Fields) {
 		return false
 	}
