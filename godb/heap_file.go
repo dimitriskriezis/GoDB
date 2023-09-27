@@ -187,7 +187,7 @@ func (f *HeapFile) readPage(pageNo int) (*Page, error) {
 func (f *HeapFile) insertTuple(t *Tuple, tid TransactionID) error {
 	// Iterate over the Pages, find a page that is empty
 	numPages := f.NumPages()
-	for i := 0; i < numPages; i++ {
+	for i := numPages - 1; i > -1; i-- {
 		p, err := f.bufPool.GetPage(f, i, tid, WritePerm)
 		if err != nil {
 			// The error is here
@@ -254,7 +254,6 @@ func (f *HeapFile) flushPage(p *Page) error {
 	// Convert the page into the byte representation
 	file, fileOpenError := os.OpenFile(f.fileName, os.O_CREATE|os.O_RDWR, 777)
 	if fileOpenError != nil {
-		fmt.Println(fileOpenError)
 		return fileOpenError
 	}
 	defer file.Close()
@@ -301,7 +300,6 @@ func (f *HeapFile) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
 				// If found slot return tuple
 				if ok {
 					currentSlot += 1
-					fmt.Println(currentPage, currentSlot)
 					return t, nil
 				}
 				// Otherwise increment i until you get a slot
