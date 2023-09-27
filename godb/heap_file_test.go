@@ -1,6 +1,7 @@
 package godb
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -111,7 +112,6 @@ func testSerializeN(t *testing.T, n int) {
 				}
 			}
 		}
-
 		//commit frequently to prevent buffer pool from filling
 		//todo fix
 		bp.CommitTransaction(tid)
@@ -159,7 +159,9 @@ func TestLoadCSV(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load failed, %s", err)
 	}
+
 	//should have 384 records
+	fmt.Println("Number of pages in file: ", hf.NumPages())
 	iter, _ := hf.Iterator(tid)
 	i := 0
 	for {

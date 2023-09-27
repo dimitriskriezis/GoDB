@@ -97,7 +97,6 @@ func (h *heapPage) insertTuple(t *Tuple) (recordID, error) {
 			rid := RecordID{pageNo: h.pageNo, slot: j}
 			t.Rid = rid
 			h.Slots[j] = t
-			fmt.Println(*t)
 			h.setDirty(true)
 			return rid, nil
 		}
@@ -116,6 +115,7 @@ func (h *heapPage) deleteTuple(rid recordID) error {
 		if slot == Rid.slot {
 			delete(h.Slots, slot)
 			h.UsedSlots[slot] = false
+			h.setDirty(true)
 			return nil
 		}
 	}
@@ -171,6 +171,7 @@ func (h *heapPage) toBuffer() (*bytes.Buffer, error) {
 			return nil, tuple_error
 		}
 	}
+	binary.Write(b, binary.LittleEndian, make([]byte, PageSize-b.Len()))
 	return b, nil //replace me
 
 }
@@ -181,12 +182,13 @@ func (h *heapPage) initFromBuffer(buf *bytes.Buffer) error {
 	var numberOfUsedSlots int32
 	binary.Read(buf, binary.LittleEndian, &numberOfSlots)
 	binary.Read(buf, binary.LittleEndian, &numberOfUsedSlots)
-	for buf.Len() > 0 {
+	for i := 0; i < int(numberOfUsedSlots); i++ {
 		tuple, err := readTupleFrom(buf, h.Desc)
 		if err != nil {
 			return err
 		}
 		rid, _ := h.insertTuple(tuple)
+		h.setDirty(false)
 		tuple.Rid = rid
 	}
 	return nil
