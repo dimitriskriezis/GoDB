@@ -1,7 +1,5 @@
 package godb
 
-import "fmt"
-
 // import (
 // 	godb "command-line-argumentsC:\\Users\\dimit\\Documents\\6.5381\\go-db-hw-2023\\godb\\buffer_pool.go"
 // 	godb "command-line-argumentsC:\\Users\\dimit\\Documents\\6.5381\\go-db-hw-2023\\godb\\types.go"
@@ -89,7 +87,6 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 	// If page not in buffer pool
 	diskPage, diskReadError := file.readPage(pageNo)
 	if diskReadError != nil {
-		fmt.Println("inget page err")
 		return nil, diskReadError
 	}
 	// If buffer pool has space add diskPage to bp
