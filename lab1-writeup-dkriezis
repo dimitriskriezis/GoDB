@@ -1,0 +1,13 @@
+Design Descisions:
+
+In this lab I made the following design decisions. First of all, I chose to represent a record Id as a struct with two values: the page number and the slot number. Also, I chose to represent a heap page as a struct with the following values: a pointer to the file the page belongs to for ease of access to the file from the page, a Dirty value to keep track of whether the page is dirty, the page number of the page, the tupledesc of the tuples in the page, a map from slot number to a tuple to store the tuples, and a used boolean array to keep track of which slots are used. For the buffer pool I chose to represent it as a struct with the following values: the size of the buffer pool, a list of the all the pages in the buffer pool, and a list of pagekeys to keep the track of the order in which we added the pages in the buffer pool. The eviction policy that I implement is the following. Everytime there was no space in the buffer pool I evicted the first page that was added to the buffer pool that wasn't dirty. For the heap file I chose to represent it as a struch with the following values: the number of pages in the file, the name of the file in disk, a pointer to the file in disk, the tupledesc for this file, and a pointer to the buffer pool.
+
+Changes to the API:
+
+I didn't make any changes to the provided API.
+
+Time committment:
+
+Overall I spent around 25 hours working on this lab. My main difficulty in this lab involved some technical
+issues with running the go test command in Windows, which I ended up solving by installing a windows linux subsystem and
+running the lab from there. Other than that I didn't have any particular difficulties other than small frustrating subtle bugs that took a lot of time to resolve.
