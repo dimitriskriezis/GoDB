@@ -38,7 +38,10 @@ func computeFieldSum(fileName string, td TupleDesc, sumField string) (int, error
 		if t == nil {
 			break
 		}
-		IdIndex, _ := findFieldInTd(FieldType{Fname: sumField}, &td)
+		IdIndex, indexError := findFieldInTd(FieldType{Fname: sumField}, &td)
+		if indexError != nil {
+			return 0, indexError
+		}
 		field_value := t.Fields[IdIndex]
 		fieldValue := field_value.(IntField)
 		sum += (int)(fieldValue.Value)
