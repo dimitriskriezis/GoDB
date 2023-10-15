@@ -51,8 +51,9 @@ func NewStringJoin(left Operator, leftField Expr, right Operator, rightField Exp
 // the union of the fields in the descriptors of the left and right operators.
 // HINT: use the merge function you implemented for TupleDesc in lab1
 func (hj *EqualityJoin[T]) Descriptor() *TupleDesc {
-	// TODO: some code goes here
-	return nil
+	leftDesc := (*hj.left).Descriptor()
+	rightDesc := (*hj.right).Descriptor()
+	return leftDesc.merge(rightDesc)
 }
 
 // Join operator implementation.  This function should iterate over the results
@@ -70,7 +71,35 @@ func (hj *EqualityJoin[T]) Descriptor() *TupleDesc {
 // out.  To pass this test, you will need to use something other than a nested
 // loops join.
 func (joinOp *EqualityJoin[T]) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
-
-	// TODO: some code goes here
-	return nil, nil
+	leftIteratorPtr := *(joinOp.left)
+	leftIterator, _ := leftIteratorPtr.Iterator(tid)
+	rightIteratorPtr := *(joinOp.right)
+	rightIterator, _ := rightIteratorPtr.Iterator(tid)
+	leftTuple, _ := leftIterator()
+	return func() (*Tuple, error) {
+		// if we are done iterating over left:
+		if leftTuple == nil {
+			return nil, nil
+		}
+		for {
+			rightTuple, _ := rightIterator()
+			if rightTuple == nil {
+				leftTuple, _ = leftIterator()
+				if leftTuple == nil {
+					return nil, nil
+				}
+				rightIterator, _ = rightIteratorPtr.Iterator(tid)
+				continue
+			}
+			leftDBVal, _ := joinOp.leftField.EvalExpr(leftTuple)
+			leftVal := joinOp.getter(leftDBVal)
+			rightDBVal, _ := joinOp.rightField.EvalExpr(rightTuple)
+			rightVal := joinOp.getter(rightDBVal)
+			// if left and right are equal return the joined tuple
+			if leftVal == rightVal {
+				joinedTuple := joinTuples(leftTuple, rightTuple)
+				return joinedTuple, nil
+			}
+		}
+	}, nil
 }

@@ -4,8 +4,6 @@ type Project struct {
 	selectFields []Expr // required fields for parser
 	outputNames  []string
 	child        Operator
-	//add additional fields here
-	// TODO: some code goes here
 }
 
 // Project constructor -- should save the list of selected field, child, and the child op.
@@ -14,8 +12,12 @@ type Project struct {
 // selectFields; throws error if not), distinct is for noting whether the projection reports
 // only distinct results, and child is the child operator.
 func NewProjectOp(selectFields []Expr, outputNames []string, distinct bool, child Operator) (Operator, error) {
-	// TODO: some code goes here
-	return nil, nil
+	project := &Project{
+		selectFields: selectFields,
+		outputNames:  outputNames,
+		child:        child,
+	}
+	return project, nil
 }
 
 // Return a TupleDescriptor for this projection. The returned descriptor should contain
@@ -23,8 +25,15 @@ func NewProjectOp(selectFields []Expr, outputNames []string, distinct bool, chil
 // as specified in the constructor.
 // HINT: you can use expr.GetExprType() to get the field type
 func (p *Project) Descriptor() *TupleDesc {
-	// TODO: some code goes here
-	return nil
+	fts := []FieldType{}
+	for i, field := range p.selectFields {
+		ft := field.GetExprType()
+		ft.Fname = p.outputNames[i]
+		fts = append(fts, ft)
+	}
+	td := TupleDesc{}
+	td.Fields = fts
+	return &td
 
 }
 
@@ -35,6 +44,22 @@ func (p *Project) Descriptor() *TupleDesc {
 // distinct tuples seen so far.  Note that support for the distinct keyword is
 // optional as specified in the lab 2 assignment.
 func (p *Project) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
-	// TODO: some code goes here
-	return nil, nil
+	childIterator, _ := p.child.Iterator(tid)
+	return func() (*Tuple, error) {
+		t, _ := childIterator()
+		if t == nil {
+			return nil, nil
+		}
+		// tomorrow
+		fields := []DBValue{}
+		for _, selectField := range p.selectFields {
+			val, _ := selectField.EvalExpr(t)
+			fields = append(fields, val)
+		}
+		td := &Tuple{
+			Desc:   *p.Descriptor(),
+			Fields: fields,
+		}
+		return td, nil
+	}, nil
 }
