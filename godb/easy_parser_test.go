@@ -108,6 +108,7 @@ func TestParseEasy(t *testing.T) {
 			fname_bin := fmt.Sprintf("savedresults/q%d-easy-result.dat", qNo)
 			os.Remove(fname_bin)
 			desc := plan.Descriptor()
+			fmt.Printf("%v\n", desc)
 			if desc == nil {
 				t.Errorf("descriptor was nil")
 				return

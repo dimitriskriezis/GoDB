@@ -43,11 +43,11 @@ func (a *Aggregator) Descriptor() *TupleDesc {
 	td := &TupleDesc{Fields: []FieldType{}}
 	if a.groupByFields != nil {
 		for i := range a.groupByFields {
-			td.merge(&TupleDesc{Fields: []FieldType{a.groupByFields[i].GetExprType()}})
+			td = td.merge(&TupleDesc{Fields: []FieldType{a.groupByFields[i].GetExprType()}})
 		}
 	}
 	for i := range a.newAggState {
-		td.merge(a.newAggState[i].GetTupleDesc())
+		td = td.merge(a.newAggState[i].GetTupleDesc())
 	}
 	return td
 }

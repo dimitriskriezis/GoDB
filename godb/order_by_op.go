@@ -25,14 +25,7 @@ func NewOrderBy(orderByFields []Expr, child Operator, ascending []bool) (*OrderB
 }
 
 func (o *OrderBy) Descriptor() *TupleDesc {
-	fts := []FieldType{}
-	for _, field := range o.orderBy {
-		ft := field.GetExprType()
-		fts = append(fts, ft)
-	}
-	td := TupleDesc{}
-	td.Fields = fts
-	return &td
+	return o.child.Descriptor()
 }
 
 type lessFunc func(field Expr, p1, p2 *Tuple) bool
