@@ -1,5 +1,7 @@
 package godb
 
+import "fmt"
+
 // import (
 // 	godb "command-line-argumentsC:\\Users\\dimit\\Documents\\6.5381\\go-db-hw-2023\\godb\\buffer_pool.go"
 // 	godb "command-line-argumentsC:\\Users\\dimit\\Documents\\6.5381\\go-db-hw-2023\\godb\\types.go"
@@ -89,6 +91,7 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 	if diskReadError != nil {
 		return nil, diskReadError
 	}
+	fmt.Println("here?")
 	// If buffer pool has space add diskPage to bp
 	if len(bp.Pages) < bp.Size {
 		bp.Pages[pageKey] = diskPage
@@ -108,6 +111,7 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 			return diskPage, nil
 		}
 	}
+
 	// Buffer pool has only dirty entries
 	return nil, GoDBError{code: BufferPoolFullError, errString: "Buffer is full of dirty pages"}
 }

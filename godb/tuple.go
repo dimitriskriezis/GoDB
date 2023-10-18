@@ -330,8 +330,21 @@ func (t *Tuple) compareField(t2 *Tuple, field Expr) (orderByState, error) {
 func (t *Tuple) project(fields []FieldType) (*Tuple, error) {
 	var final_fieldTypes []FieldType
 	var final_fields []DBValue
-	for i := 0; i < len(t.Desc.Fields); i++ {
-		for j := 0; j < len(fields); j++ {
+	for j := 0; j < len(fields); j++ {
+		// find the first the matches table qualifer; if none the just return the first
+		matchedOnQualifier := false
+		for i := 0; i < len(t.Desc.Fields); i++ {
+			if t.Desc.Fields[i].Fname == fields[j].Fname && t.Desc.Fields[i].TableQualifier == fields[j].TableQualifier {
+				matchedOnQualifier = true
+				final_fieldTypes = append(final_fieldTypes, fields[j])
+				final_fields = append(final_fields, t.Fields[i])
+				break
+			}
+		}
+		if matchedOnQualifier {
+			continue
+		}
+		for i := 0; i < len(t.Desc.Fields); i++ {
 			if t.Desc.Fields[i].Fname == fields[j].Fname {
 				final_fieldTypes = append(final_fieldTypes, fields[j])
 				final_fields = append(final_fields, t.Fields[i])

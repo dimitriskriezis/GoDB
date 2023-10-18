@@ -50,7 +50,6 @@ func (p *Project) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
 		if t == nil {
 			return nil, nil
 		}
-		// tomorrow
 		fields := []DBValue{}
 		for _, selectField := range p.selectFields {
 			val, _ := selectField.EvalExpr(t)

@@ -1,6 +1,7 @@
 package godb
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -101,6 +102,7 @@ func TestDirtyBit(t *testing.T) {
 	bp.BeginTransaction(tid)
 	hf.insertTuple(&t1, tid)
 	page, _ := bp.GetPage(hf, 0, tid, ReadPerm)
+	fmt.Println(*page)
 	if !(*page).isDirty() {
 		t.Fatalf("Expected page to be dirty")
 	}
@@ -388,7 +390,11 @@ func TestBufferPoolHoldsMultipleHeapFiles(t *testing.T) {
 		panic(err)
 	}
 
-	if hf.insertTuple(&t1, tid) != nil || hf2.insertTuple(&t2, tid) != nil {
+	err1 := hf.insertTuple(&t1, tid)
+	err2 := hf.insertTuple(&t1, tid)
+	err3 := hf2.insertTuple(&t2, tid)
+
+	if err1 != nil || err2 != nil || err3 != nil {
 		t.Errorf("The BufferPool should be able to handle multiple files")
 	}
 	// bp contains 2 dirty pages at this point
@@ -409,6 +415,7 @@ func TestBufferPoolHoldsMultipleHeapFiles(t *testing.T) {
 	}
 
 	// bp contains 3 dirty pages at this point, including 2 full pages of hf2
+	hf2.insertTuple(&t2, tid)
 	if err := hf2.insertTuple(&t2, tid); err == nil {
 		t.Errorf("should cause bufferpool dirty page overflow here")
 	}
@@ -440,7 +447,7 @@ func TestTupleProjectExtra(t *testing.T) {
 	if err != nil {
 		t.Errorf("%v", err)
 	}
-
+	fmt.Println(t2)
 	if t2.Fields[0].(StringField).Value != "SFname1tq1" && t2.Fields[0].(StringField).Value != "SFname1tq2" {
 		t.Errorf("wrong match 0")
 	}
