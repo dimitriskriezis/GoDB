@@ -1,0 +1,36 @@
+The design decisions I made for this lab are the following:
+
+For the filter operation the descirptor is just the descriptor of the child operator and the iterator just iterates over all tuples from the child
+iterator and returns one if the left and right expressions evaluate to the same value.
+
+For the join operation the descriptor is the merge of the descriptors of the left and the right operators. The iterator for the join operation is 
+implemented as a nested loop join. For each tuple in the left iterator we instantiate an iterator over the tuples in the right operator, we evaluate
+the left and right expressions for both tuples and if the results are the same we return the joined tuple. We terminate when the left iterator returns
+nil i.e we have iterated over all tuples.
+
+For the aggregation state, for SumAggState I kept track of the running sum with a sum attribute in the struct. 
+For the AvgAggState I kept track of the running sum with a sum attribute, and the number of elements counted with a length attribute and then I divided 
+the sum attribute by the length attribute to get the the average. For the minAggState I have a min attribute that keeps track of the minimum value seen so far.
+
+For the aggregate operator the descriptor consists of the group by fields, if any exist, followed by the alias of the aggregated column. The iterator
+for the aggeragation operation is implemented according to the logic of the skeleton code provided by the lab. The extractGroupByKeyTuple function iterates over the
+groupByfields expressions and extracts their fieldtype and value. The function addTupleToGrpAggState iterates over the the aggStates and if one doesn't exist it creates
+a new one otherwise it adds the tuple to ther aggregate state. The function getFinalizedTuplesIterator iterates over the tuple for each group and joins it with the aggregation results of that group.
+
+For the insertion and deletion operations, the desciptor is a single field called "count" and the iterator just iterates over all tuples in the child
+ operator and inserts/deletes them in the heapfile.
+
+For the projection operator, the descriptor is just the new aliases assigned to the columns. The iterator iterates over all tuples in the child
+operator and selects the ones that correspond to the fieldType being selected.
+
+For the order by operator, the descriptor is just the child descriptor. The iterator, first sorts the tuples
+using a multikey sort in the order specified by the query. To do this I make use of the the golang sort function.
+If I am sorting in ascending order I do a lessthan comparison of the tuples, if I am sorting in descending order I do a greater than
+comparsion of the tuples. Then I iterate over the tuples in the sorted order and return them one at a time.
+
+For the limit operator, the descriptor is just the child descriptor. The iterator just iterates over the tuples
+in the child Operator until lim tuples have been returned. The limitOp struct consists of two values, the child operator
+and a lim expression that specifies how many tuples should be returned.
+
+In total I spent about 10 hours working on this lab. I didn't find anything in this lab particularly confusing,
+it was a lot more straightforward compared to lab 1!
