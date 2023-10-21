@@ -83,9 +83,9 @@ func TestSetDirty(t *testing.T) {
 	_, t1, _, hf, bp, _ := makeTestVars()
 	tid := NewTID()
 	bp.BeginTransaction(tid)
-	for i := 0; i < 307; i++ {
+	for i := 0; i < 308; i++ {
 		err := hf.insertTuple(&t1, tid)
-		if err != nil && i == 306 {
+		if err != nil && (i == 306 || i == 307) {
 			return
 		} else if err != nil {
 			t.Fatalf("%v", err)
@@ -100,6 +100,7 @@ func TestDirtyBit(t *testing.T) {
 
 	tid := NewTID()
 	bp.BeginTransaction(tid)
+	hf.insertTuple(&t1, tid)
 	hf.insertTuple(&t1, tid)
 	page, _ := bp.GetPage(hf, 0, tid, ReadPerm)
 	fmt.Println(*page)
@@ -267,8 +268,7 @@ func TestHeapFileSize(t *testing.T) {
 		t.Fatalf("unexpected error, stat, %s", err.Error())
 	}
 	if info.Size() != int64(PageSize) {
-		t.Fatalf("heap file is not %d bytes", PageSize)
-
+		t.Fatalf("heap file page is not %d bytes;  NOTE:  This error may be OK, but many implementations that don't write full pages break.", PageSize)
 	}
 
 }
@@ -348,7 +348,7 @@ func TestBufferLen(t *testing.T) {
 	buf, _ := page.toBuffer()
 
 	if buf.Len() != PageSize {
-		t.Fatalf("HeapPage.toBuffer returns buffer of unexpected size")
+		t.Fatalf("HeapPage.toBuffer returns buffer of unexpected size;  NOTE:  This error may be OK, but many implementations that don't write full pages break.")
 	}
 
 }
@@ -415,7 +415,7 @@ func TestBufferPoolHoldsMultipleHeapFiles(t *testing.T) {
 	}
 
 	// bp contains 3 dirty pages at this point, including 2 full pages of hf2
-	hf2.insertTuple(&t2, tid)
+	_ = hf2.insertTuple(&t2, tid)
 	if err := hf2.insertTuple(&t2, tid); err == nil {
 		t.Errorf("should cause bufferpool dirty page overflow here")
 	}
@@ -437,18 +437,18 @@ func TestTupleProjectExtra(t *testing.T) {
 		}}
 
 	t2, err := t1.project([]FieldType{
-		{Fname: "name1"},
-		{Fname: "name2"},
-		{Fname: "name1", TableQualifier: "tq1"},
-		{Fname: "name2", TableQualifier: "tq2"},
-		{Fname: "name1", TableQualifier: "tq2"},
+		{Fname: "name1", TableQualifier: "tq1", Ftype: StringType},
+		{Fname: "name2", TableQualifier: "", Ftype: StringType},
+		{Fname: "name1", TableQualifier: "tq1", Ftype: StringType},
+		{Fname: "name2", TableQualifier: "tq2", Ftype: StringType},
+		{Fname: "name1", TableQualifier: "tq2", Ftype: StringType},
 	})
 
 	if err != nil {
 		t.Errorf("%v", err)
 	}
-	fmt.Println(t2)
-	if t2.Fields[0].(StringField).Value != "SFname1tq1" && t2.Fields[0].(StringField).Value != "SFname1tq2" {
+
+	if t2.Fields[0].(StringField).Value != "SFname1tq1" {
 		t.Errorf("wrong match 0")
 	}
 
