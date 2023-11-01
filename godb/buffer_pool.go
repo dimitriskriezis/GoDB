@@ -66,16 +66,32 @@ func IndexOf(array []any, val any) int {
 	return -1
 }
 
+func TransactionIndexOf(array []TransactionID, val any) int {
+	for i := range array {
+		if array[i] == val {
+			return i
+		}
+	}
+	return -1
+}
+
 // Abort the transaction, releasing locks. Because GoDB is FORCE/NO STEAL, none
 // of the pages tid has dirtired will be on disk so it is sufficient to just
 // release locks to abort. You do not need to implement this for lab 1.
 func (bp *BufferPool) AbortTransaction(tid TransactionID) {
-	// release all read locks
+	// release all read locks by tid
 	for pageId := range bp.SharedLocks {
-		delete(bp.SharedLocks, pageId)
+		if slices.Contains(bp.SharedLocks[pageId], tid) {
+			index := TransactionIndexOf(bp.SharedLocks[pageId], tid)
+			bp.SharedLocks[pageId] = append(bp.SharedLocks[pageId][:index], bp.SharedLocks[pageId][index+1:]...)
+		}
+		if len(bp.SharedLocks[pageId]) == 0 {
+			delete(bp.SharedLocks, pageId)
+		}
 	}
+	println(bp.Pages)
 	for pageId, pageTid := range bp.ExclusiveLocks {
-		// If the file is locked by this transaction flush it
+		// If the file is locked by this transaction delete it
 		if pageTid == tid {
 			_, ok := bp.Pages[pageId]
 			if ok {
@@ -84,8 +100,10 @@ func (bp *BufferPool) AbortTransaction(tid TransactionID) {
 				index := IndexOf(bp.Order, pageId)
 				bp.Order = append(bp.Order[:index], bp.Order[index+1:]...)
 			}
+			delete(bp.ExclusiveLocks, pageId)
 		}
 	}
+	println(bp.Pages)
 }
 
 // Commit the transaction, releasing locks. Because GoDB is FORCE/NO STEAL, none
@@ -106,11 +124,18 @@ func (bp *BufferPool) CommitTransaction(tid TransactionID) {
 				index := IndexOf(bp.Order, pageId)
 				bp.Order = append(bp.Order[:index], bp.Order[index+1:]...)
 			}
+			delete(bp.ExclusiveLocks, pageId)
 		}
 	}
-	// release all read locks without writing to disk
+	// release all read locks by this tid
 	for pageId := range bp.SharedLocks {
-		delete(bp.SharedLocks, pageId)
+		if slices.Contains(bp.SharedLocks[pageId], tid) {
+			index := TransactionIndexOf(bp.SharedLocks[pageId], tid)
+			bp.SharedLocks[pageId] = append(bp.SharedLocks[pageId][:index], bp.SharedLocks[pageId][index+1:]...)
+		}
+		if len(bp.SharedLocks[pageId]) == 0 {
+			delete(bp.SharedLocks, pageId)
+		}
 	}
 }
 
@@ -131,52 +156,69 @@ func (bp *BufferPool) BeginTransaction(tid TransactionID) error {
 // one of the transactions in the deadlock]. You will likely want to store a list
 // of pages in the BufferPool in a map keyed by the [DBFile.pageKey].
 func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm RWPerm) (*Page, error) {
-	println("Info", tid, perm)
+	println("Info", tid, pageNo, perm)
 	pageKey := file.pageKey(pageNo)
 	for {
-		// bp.Mutex.Lock()
+		bp.Mutex.Lock()
 		// if write perm check if there is any lock on this page
 		if perm == WritePerm {
-			sharedLockTids, areSharedLocks := bp.SharedLocks[pageKey]
+			_, areSharedLocks := bp.SharedLocks[pageKey]
 			exclusiveLockTid, isExclusiveLock := bp.ExclusiveLocks[pageKey]
-			// if there is one by some other transaction either shared or exclusive release mutex
-			if (areSharedLocks || isExclusiveLock) && (exclusiveLockTid != tid && !slices.Contains(sharedLockTids, tid)) {
-				// release mutex
-				defer bp.Mutex.Unlock()
-				// sleep
-				time.Sleep(1 * time.Millisecond)
-			} else if slices.Contains(sharedLockTids, tid) && len(sharedLockTids) == 1 {
-				// if there is only one read lock by this transaction upgrade to exclusive lock and remove shared lock
-				bp.SharedLocks[pageKey] = []TransactionID{}
-				bp.ExclusiveLocks[pageKey] = tid
-				defer bp.Mutex.Unlock()
-				break
+			// if there are no locks on the page get exclusive lock
+			// if there are no exclusive locks check shared locks
+			//
+			if isExclusiveLock {
+				// if there is exclusive locks on the page if another tid holds the lock sleep else if you hold it break
+				if exclusiveLockTid != tid {
+					print("here")
+					bp.Mutex.Unlock()
+					time.Sleep(time.Millisecond)
+				} else {
+					break
+				}
+
+			} else if areSharedLocks {
+				// if tid has a shared lock and it is the only shared lock upgrade to exclusive else sleep
+				if slices.Contains(bp.SharedLocks[pageKey], tid) && len(bp.SharedLocks[pageKey]) == 1 {
+					bp.SharedLocks[pageKey] = []TransactionID{}
+					bp.ExclusiveLocks[pageKey] = tid
+					break
+				} else {
+					bp.Mutex.Unlock()
+					time.Sleep(time.Millisecond)
+				}
 			} else {
-				// otherwise no lock on this page and acquire lock
+				// no locks just acquire the write lock
 				bp.ExclusiveLocks[pageKey] = tid
-				defer bp.Mutex.Unlock()
 				break
 			}
-
 		}
 
 		// if read perm check if there is any exclusive lock on this page
 		if perm == ReadPerm {
 			_, areSharedLocks := bp.SharedLocks[pageKey]
-			_, isExclusiveLock := bp.ExclusiveLocks[pageKey]
-			// if there is exclusive lock sleep
+			exclusiveLockTid, isExclusiveLock := bp.ExclusiveLocks[pageKey]
+			// if there is exclusive lock by some other transaction sleep
+			// else if there are shared locks by other transaction but not by this tid obtain a read transaction
+			// otherwise if there are no shared locks on this page acquire a shared lock on the page
+			// if successfully acquire lock break from the for loop but don't unlock. Get page and unlock before return
 			if isExclusiveLock {
-				defer bp.Mutex.Unlock()
-				time.Sleep(1 * time.Millisecond)
+				// if I don't hold the lock sleep else break
+				if exclusiveLockTid != tid {
+					bp.Mutex.Unlock()
+					time.Sleep(1 * time.Millisecond)
+				} else {
+					break
+				}
 			} else if areSharedLocks {
+				// if there is no shared lock by this transaction acquire it and then just read
 				if !slices.Contains(bp.SharedLocks[pageKey], tid) {
 					bp.SharedLocks[pageKey] = append(bp.SharedLocks[pageKey], tid)
 				}
-				// defer bp.Mutex.Unlock()
 				break
 			} else {
+				// if there are no locks just take one by this tid
 				bp.SharedLocks[pageKey] = []TransactionID{tid}
-				// defer bp.Mutex.Unlock()
 				break
 			}
 		}
@@ -184,17 +226,20 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 	bpPage, ok := bp.Pages[pageKey]
 	// If page in buffer pool retrieve page from the buffer pool
 	if ok {
+		bp.Mutex.Unlock()
 		return bpPage, nil
 	}
 	// If page not in buffer pool no one has a lock on it so we are first move page to memory take lock
 	diskPage, diskReadError := file.readPage(pageNo)
 	if diskReadError != nil {
+		bp.Mutex.Unlock()
 		return nil, diskReadError
 	}
 	// If buffer pool has space add diskPage to bp
 	if len(bp.Pages) < bp.Size {
 		bp.Pages[pageKey] = diskPage
 		bp.Order = append(bp.Order, pageKey)
+		bp.Mutex.Unlock()
 		return diskPage, nil
 	}
 	// Buffer pool doesn't have space. Get LRU clean page id and evict it. If none throw error
@@ -207,10 +252,12 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 			// Add current page
 			bp.Pages[pageKey] = diskPage
 			bp.Order = append(bp.Order, pageKey)
+			bp.Mutex.Unlock()
 			return diskPage, nil
 		}
 	}
 
 	// Buffer pool has only dirty entries
+	bp.Mutex.Unlock()
 	return nil, GoDBError{code: BufferPoolFullError, errString: "Buffer is full of dirty pages"}
 }

@@ -213,15 +213,18 @@ func (f *HeapFile) insertTuple(t *Tuple, tid TransactionID) error {
 	// No empty pages were found so create a new one, insert, and then flush
 	newPage := newHeapPage(f.desc, numPages, f)
 	f.numPages += 1
-	_, newInserError := newPage.insertTuple(t)
-	if newInserError != nil {
-		return newInserError
-	}
 	var hp Page = newPage
 	newFlushError := f.flushPage(&hp)
 	if newFlushError != nil {
 		return newFlushError
 	}
+	page, _ := f.bufPool.GetPage(f, f.numPages-1, tid, WritePerm)
+	heapPage := (*page).(*heapPage)
+	_, newInserError := heapPage.insertTuple(t)
+	if newInserError != nil {
+		return newInserError
+	}
+
 	return nil
 }
 
