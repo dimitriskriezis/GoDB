@@ -26,7 +26,7 @@ type HeapFile struct {
 	file     *os.File
 	desc     *TupleDesc
 	bufPool  *BufferPool
-	sync.Mutex
+	m        sync.Mutex
 }
 
 // Create a HeapFile.
@@ -42,7 +42,7 @@ func NewHeapFile(fromFile string, td *TupleDesc, bp *BufferPool) (*HeapFile, err
 	if err != nil {
 		file, _ = os.Create(fromFile)
 	} else {
-		file, err = os.OpenFile(fromFile, os.O_RDWR, 777)
+		file, _ = os.OpenFile(fromFile, os.O_RDWR, 777)
 		fileInfo, _ := file.Stat()
 		fileSize := (int)(fileInfo.Size())
 		numberOfPages = fileSize / PageSize
@@ -210,21 +210,25 @@ func (f *HeapFile) insertTuple(t *Tuple, tid TransactionID) error {
 			return nil
 		}
 	}
+	// acquire a mutex before adding a new page
+	f.m.Lock()
 	// No empty pages were found so create a new one, insert, and then flush
 	newPage := newHeapPage(f.desc, numPages, f)
 	f.numPages += 1
 	var hp Page = newPage
 	newFlushError := f.flushPage(&hp)
 	if newFlushError != nil {
+		f.m.Unlock()
 		return newFlushError
 	}
 	page, _ := f.bufPool.GetPage(f, f.numPages-1, tid, WritePerm)
 	heapPage := (*page).(*heapPage)
 	_, newInserError := heapPage.insertTuple(t)
 	if newInserError != nil {
+		f.m.Unlock()
 		return newInserError
 	}
-
+	f.m.Unlock()
 	return nil
 }
 
@@ -236,15 +240,18 @@ func (f *HeapFile) insertTuple(t *Tuple, tid TransactionID) error {
 // so you can supply any object you wish.  You will likely want to identify the
 // heap page and slot within the page that the tuple came from.
 func (f *HeapFile) deleteTuple(t *Tuple, tid TransactionID) error {
+	f.m.Lock()
 	Rid, _ := t.Rid.(RecordID)
 	pageNo := Rid.pageNo
 	p, getPageError := f.bufPool.GetPage(f, pageNo, tid, WritePerm)
 	h := (*p).(*heapPage)
 	if getPageError != nil {
+		f.m.Unlock()
 		return getPageError
 	}
 	// call page.deleteTuple
 	h.deleteTuple(Rid)
+	f.m.Unlock()
 	return nil //replace me
 }
 

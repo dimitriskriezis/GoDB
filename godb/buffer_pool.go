@@ -25,13 +25,19 @@ const (
 	WritePerm RWPerm = iota
 )
 
+type LockWait struct {
+	tid  TransactionID
+	page any
+}
+
 type BufferPool struct {
 	Size           int
 	Pages          map[any]*Page
 	Order          []any
 	Mutex          sync.Mutex
-	SharedLocks    map[any][]TransactionID // map that keeps track of which transactions have a lock on a specific page
-	ExclusiveLocks map[any]TransactionID   // map that keeps track of which page transaction has an exclusive lock on a specific pageId
+	SharedLocks    map[any][]TransactionID      // map that keeps track of which transactions have a lock on a specific page
+	ExclusiveLocks map[any]TransactionID        // map that keeps track of which page transaction has an exclusive lock on a specific pageId
+	waitGraph      map[TransactionID][]LockWait // map that keeps track of which transaction waits on what other transactions
 }
 
 // Create a new BufferPool with the specified number of pages
@@ -42,7 +48,71 @@ func NewBufferPool(numPages int) *BufferPool {
 		Order:          []any{},
 		SharedLocks:    map[any][]TransactionID{},
 		ExclusiveLocks: map[any]TransactionID{},
+		waitGraph:      map[TransactionID][]LockWait{},
 	}
+}
+
+func (bp *BufferPool) addLockWait(waitingTid TransactionID, waitingOnTid TransactionID, lockedPage any) {
+	edge := LockWait{waitingOnTid, lockedPage}
+	// if edge already included
+	for _, currentEdge := range bp.waitGraph[waitingTid] {
+		if currentEdge == edge {
+			return
+		}
+	}
+	// add edge in graph
+	bp.waitGraph[waitingTid] = append(bp.waitGraph[waitingTid], edge)
+}
+
+// Remove lock from graph
+func (bp *BufferPool) removeLockWait(tid TransactionID, pageId any) {
+	// Before I acquire a lock, check if I was waiting for that lock to remove it from the wait graph
+	index := -1
+	for i, val := range bp.waitGraph[tid] {
+		// If I was waiting
+		if val.page == pageId {
+			index = i
+		}
+	}
+	// if I was waiting for a lock remove it from the graph
+	if index > 0 {
+		bp.waitGraph[tid] = append(bp.waitGraph[tid][:index], bp.waitGraph[tid][index+1:]...)
+	}
+}
+
+func (bp *BufferPool) removeTransactionFromWaitGraph(tid TransactionID) {
+	// If I commit or abort remove transaction node as well as all edges into transaction node from the graph
+	// if transaction in wait graph remove the transaction
+	if _, ok := bp.waitGraph[tid]; ok {
+		// delete all outgoing edges
+		delete(bp.waitGraph, tid)
+		// delete all incoming edges
+		for key := range bp.waitGraph {
+			for _, edge := range bp.waitGraph[key] {
+				if edge.tid == tid {
+					bp.removeLockWait(key, edge.page)
+				}
+			}
+		}
+	}
+}
+
+func dfs(bp *BufferPool, startnode TransactionID, visited *map[TransactionID]bool) bool {
+	(*visited)[startnode] = true
+	graph := bp.waitGraph
+	for _, child := range graph[startnode] {
+		// if child is visited in the recursion stack there is a cycle
+		if _, ok := (*visited)[child.tid]; ok {
+			return true
+		}
+		dfs(bp, child.tid, visited) // explore all other tids
+	}
+	return false
+}
+
+func (bp *BufferPool) detectCycle(tid TransactionID) bool {
+	visited := map[TransactionID]bool{}
+	return dfs(bp, tid, &visited)
 }
 
 // Testing method -- iterate through all pages in the buffer pool
@@ -79,6 +149,7 @@ func TransactionIndexOf(array []TransactionID, val any) int {
 // of the pages tid has dirtired will be on disk so it is sufficient to just
 // release locks to abort. You do not need to implement this for lab 1.
 func (bp *BufferPool) AbortTransaction(tid TransactionID) {
+	bp.removeTransactionFromWaitGraph(tid)
 	// release all read locks by tid
 	for pageId := range bp.SharedLocks {
 		if slices.Contains(bp.SharedLocks[pageId], tid) {
@@ -112,6 +183,7 @@ func (bp *BufferPool) AbortTransaction(tid TransactionID) {
 // that the system will not crash while doing this, allowing us to avoid using a
 // WAL. You do not need to implement this for lab 1.
 func (bp *BufferPool) CommitTransaction(tid TransactionID) {
+	bp.removeTransactionFromWaitGraph(tid)
 	// flush each page tid edited to disk
 	for pageId, pageTid := range bp.ExclusiveLocks {
 		// If the file is locked by this transaction flush it
@@ -156,7 +228,7 @@ func (bp *BufferPool) BeginTransaction(tid TransactionID) error {
 // one of the transactions in the deadlock]. You will likely want to store a list
 // of pages in the BufferPool in a map keyed by the [DBFile.pageKey].
 func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm RWPerm) (*Page, error) {
-	println("Info", tid, pageNo, perm)
+	// println("Info", tid, pageNo, perm)
 	pageKey := file.pageKey(pageNo)
 	for {
 		bp.Mutex.Lock()
@@ -170,7 +242,17 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 			if isExclusiveLock {
 				// if there is exclusive locks on the page if another tid holds the lock sleep else if you hold it break
 				if exclusiveLockTid != tid {
-					print("here")
+					// If lock is being held try to add edge to the wait graph
+					bp.addLockWait(tid, exclusiveLockTid, pageKey)
+					// if cycle abort
+					if bp.detectCycle(tid) {
+						// release mutex
+						bp.Mutex.Unlock()
+						// abort transaction
+						bp.AbortTransaction(tid)
+						// throw error
+						return nil, GoDBError{code: DeadlockError, errString: "Transaction deadlocked"}
+					}
 					bp.Mutex.Unlock()
 					time.Sleep(time.Millisecond)
 				} else {
@@ -184,6 +266,21 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 					bp.ExclusiveLocks[pageKey] = tid
 					break
 				} else {
+					// add an edge waiting for every shared in
+					for _, sharedTid := range bp.SharedLocks[pageKey] {
+						if tid != sharedTid {
+							bp.addLockWait(tid, sharedTid, pageKey)
+						}
+					}
+					// if cycle abort
+					if bp.detectCycle(tid) {
+						// release mutex
+						bp.Mutex.Unlock()
+						// abort transaction
+						bp.AbortTransaction(tid)
+						// throw error
+						return nil, GoDBError{code: DeadlockError, errString: "Transaction deadlocked"}
+					}
 					bp.Mutex.Unlock()
 					time.Sleep(time.Millisecond)
 				}
@@ -205,6 +302,16 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 			if isExclusiveLock {
 				// if I don't hold the lock sleep else break
 				if exclusiveLockTid != tid {
+					bp.addLockWait(tid, exclusiveLockTid, pageKey)
+					// if cycle abort
+					if bp.detectCycle(tid) {
+						// release mutex
+						bp.Mutex.Unlock()
+						// abort transaction
+						bp.AbortTransaction(tid)
+						// throw error
+						return nil, GoDBError{code: DeadlockError, errString: "Transaction deadlocked"}
+					}
 					bp.Mutex.Unlock()
 					time.Sleep(1 * time.Millisecond)
 				} else {
