@@ -221,7 +221,10 @@ func (f *HeapFile) insertTuple(t *Tuple, tid TransactionID) error {
 		f.m.Unlock()
 		return newFlushError
 	}
-	page, _ := f.bufPool.GetPage(f, f.numPages-1, tid, WritePerm)
+	page, getPageError := f.bufPool.GetPage(f, f.numPages-1, tid, WritePerm)
+	if getPageError != nil {
+		return getPageError
+	}
 	heapPage := (*page).(*heapPage)
 	_, newInserError := heapPage.insertTuple(t)
 	if newInserError != nil {
@@ -244,11 +247,10 @@ func (f *HeapFile) deleteTuple(t *Tuple, tid TransactionID) error {
 	Rid, _ := t.Rid.(RecordID)
 	pageNo := Rid.pageNo
 	p, getPageError := f.bufPool.GetPage(f, pageNo, tid, WritePerm)
-	h := (*p).(*heapPage)
 	if getPageError != nil {
-		// f.m.Unlock()
 		return getPageError
 	}
+	h := (*p).(*heapPage)
 	// call page.deleteTuple
 	h.deleteTuple(Rid)
 	// f.m.Unlock()
@@ -300,11 +302,11 @@ func (f *HeapFile) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
 	currentSlot := 0
 	return func() (*Tuple, error) {
 		for currentPage < f.NumPages() {
-			p, readPageError := f.bufPool.GetPage(f, currentPage, tid, WritePerm)
-			h := (*p).(*heapPage)
+			p, readPageError := f.bufPool.GetPage(f, currentPage, tid, ReadPerm)
 			if readPageError != nil {
 				return nil, readPageError
 			}
+			h := (*p).(*heapPage)
 			for currentSlot < h.getNumSlots() {
 				t, ok := h.Slots[currentSlot]
 				// If found slot return tuple

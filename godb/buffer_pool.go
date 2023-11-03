@@ -105,7 +105,10 @@ func dfs(bp *BufferPool, startnode TransactionID, visited *map[TransactionID]boo
 		if _, ok := (*visited)[child.tid]; ok {
 			return true
 		}
-		dfs(bp, child.tid, visited) // explore all other tids
+		val := dfs(bp, child.tid, visited) // explore all other tids
+		if val {
+			return val
+		}
 	}
 	return false
 }
@@ -305,7 +308,7 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 						return nil, GoDBError{code: DeadlockError, errString: "Transaction deadlocked"}
 					}
 					bp.Mutex.Unlock()
-					print("here1")
+					// print("here1")
 					time.Sleep(5 * time.Microsecond)
 				}
 			} else {
