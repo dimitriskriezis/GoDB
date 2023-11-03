@@ -35,10 +35,10 @@ func (iop *InsertOp) Iterator(tid TransactionID) (func() (*Tuple, error), error)
 			if t == nil {
 				break
 			}
-			insertError := iop.file.insertTuple(t, tid)
-			if insertError != nil {
-				return nil, insertError
-			}
+			iop.file.insertTuple(t, tid)
+			// if insertError != nil {
+			// 	return nil, insertError
+			// }
 			count += 1
 		}
 		return &Tuple{Desc: *iop.Descriptor(), Fields: []DBValue{IntField{Value: int64(count)}}}, nil

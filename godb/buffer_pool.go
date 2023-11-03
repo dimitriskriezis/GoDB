@@ -279,7 +279,7 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 					// }
 					println("here")
 					bp.Mutex.Unlock()
-					time.Sleep(10 * time.Millisecond)
+					time.Sleep(10 * time.Microsecond)
 				} else {
 					break
 				}
@@ -309,7 +309,7 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 					}
 					bp.Mutex.Unlock()
 					// print("here1")
-					time.Sleep(10 * time.Millisecond)
+					time.Sleep(10 * time.Microsecond)
 				}
 			} else {
 				// no locks just acquire the write lock
@@ -341,7 +341,7 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 					}
 					print("here3")
 					bp.Mutex.Unlock()
-					time.Sleep(10 * time.Millisecond)
+					time.Sleep(10 * time.Microsecond)
 				} else {
 					break
 				}
