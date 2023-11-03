@@ -120,7 +120,6 @@ func TestTransactions(t *testing.T) {
 	var wg sync.WaitGroup
 
 	for i := 0; i < 1000; i++ {
-		print(i)
 		err := hf.insertTuple(&t1, tid)
 		if err != nil {
 			fmt.Print(err.Error())

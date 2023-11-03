@@ -165,7 +165,7 @@ func (bp *BufferPool) AbortTransaction(tid TransactionID) {
 			delete(bp.SharedLocks, pageId)
 		}
 	}
-	println(bp.Pages)
+
 	for pageId, pageTid := range bp.ExclusiveLocks {
 		// If the file is locked by this transaction delete it
 		if pageTid == tid {
@@ -179,8 +179,8 @@ func (bp *BufferPool) AbortTransaction(tid TransactionID) {
 			delete(bp.ExclusiveLocks, pageId)
 		}
 	}
-	println(bp.Pages)
 	bp.Mutex.Unlock()
+	time.Sleep(10 * time.Millisecond)
 }
 
 // Commit the transaction, releasing locks. Because GoDB is FORCE/NO STEAL, none
@@ -259,7 +259,6 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 					// if cycle abort
 					if bp.detectCycle(tid) {
 						// release mutex
-						println(tid)
 						bp.Mutex.Unlock()
 						bp.AbortTransaction(tid)
 						// throw error
@@ -299,7 +298,6 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 					}
 					// if cycle abort
 					if bp.detectCycle(tid) {
-						println(tid)
 						// release mutex
 						bp.Mutex.Unlock()
 						// abort transaction
