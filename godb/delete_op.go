@@ -34,7 +34,10 @@ func (dop *DeleteOp) Iterator(tid TransactionID) (func() (*Tuple, error), error)
 			if t == nil {
 				break
 			}
-			dop.file.deleteTuple(t, tid)
+			deleteError := dop.file.deleteTuple(t, tid)
+			if deleteError != nil {
+				return nil, deleteError
+			}
 			count += 1
 		}
 		return &Tuple{Desc: *dop.Descriptor(), Fields: []DBValue{IntField{Value: int64(count)}}}, nil
