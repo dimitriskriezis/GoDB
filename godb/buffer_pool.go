@@ -152,7 +152,7 @@ func TransactionIndexOf(array []TransactionID, val any) int {
 // of the pages tid has dirtired will be on disk so it is sufficient to just
 // release locks to abort. You do not need to implement this for lab 1.
 func (bp *BufferPool) AbortTransaction(tid TransactionID) {
-	println("I am aborting")
+	// println("I am aborting")
 	bp.Mutex.Lock()
 	bp.removeTransactionFromWaitGraph(tid)
 	// release all read locks by tid
@@ -277,7 +277,7 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 					// 	}
 					// 	println()
 					// }
-					println("here")
+					// println("here")
 					bp.Mutex.Unlock()
 					time.Sleep(10 * time.Microsecond)
 				} else {
@@ -339,7 +339,7 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 						// throw error
 						return nil, GoDBError{code: DeadlockError, errString: "Transaction deadlocked"}
 					}
-					print("here3")
+					// print("here3")
 					bp.Mutex.Unlock()
 					time.Sleep(10 * time.Microsecond)
 				} else {
