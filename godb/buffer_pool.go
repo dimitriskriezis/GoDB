@@ -186,7 +186,7 @@ func (bp *BufferPool) AbortTransaction(tid TransactionID) {
 // that the system will not crash while doing this, allowing us to avoid using a
 // WAL. You do not need to implement this for lab 1.
 func (bp *BufferPool) CommitTransaction(tid TransactionID) {
-	// bp.Mutex.Lock()
+	bp.Mutex.Lock()
 	// println("I am committing ", tid)
 	// for key, value := range bp.ExclusiveLocks {
 	// 	println(key, value)
