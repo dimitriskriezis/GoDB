@@ -69,7 +69,7 @@ func (bp *BufferPool) removeLockWait(tid TransactionID, pageId any) {
 	// Before I acquire a lock, check if I was waiting for that lock to remove it from the wait graph
 	index := -1
 	for i, val := range bp.waitGraph[tid] {
-		// If I was waiting
+		// If I was waiting for a lock on that
 		if val.page == pageId {
 			index = i
 		}
@@ -149,6 +149,8 @@ func TransactionIndexOf(array []TransactionID, val any) int {
 // of the pages tid has dirtired will be on disk so it is sufficient to just
 // release locks to abort. You do not need to implement this for lab 1.
 func (bp *BufferPool) AbortTransaction(tid TransactionID) {
+	println("I am aborting")
+	bp.Mutex.Lock()
 	bp.removeTransactionFromWaitGraph(tid)
 	// release all read locks by tid
 	for pageId := range bp.SharedLocks {
@@ -175,6 +177,7 @@ func (bp *BufferPool) AbortTransaction(tid TransactionID) {
 		}
 	}
 	println(bp.Pages)
+	bp.Mutex.Unlock()
 }
 
 // Commit the transaction, releasing locks. Because GoDB is FORCE/NO STEAL, none
@@ -183,6 +186,11 @@ func (bp *BufferPool) AbortTransaction(tid TransactionID) {
 // that the system will not crash while doing this, allowing us to avoid using a
 // WAL. You do not need to implement this for lab 1.
 func (bp *BufferPool) CommitTransaction(tid TransactionID) {
+	// bp.Mutex.Lock()
+	// println("I am committing ", tid)
+	// for key, value := range bp.ExclusiveLocks {
+	// 	println(key, value)
+	// }
 	bp.removeTransactionFromWaitGraph(tid)
 	// flush each page tid edited to disk
 	for pageId, pageTid := range bp.ExclusiveLocks {
@@ -209,6 +217,7 @@ func (bp *BufferPool) CommitTransaction(tid TransactionID) {
 			delete(bp.SharedLocks, pageId)
 		}
 	}
+	bp.Mutex.Unlock()
 }
 
 func (bp *BufferPool) BeginTransaction(tid TransactionID) error {
@@ -247,14 +256,27 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 					// if cycle abort
 					if bp.detectCycle(tid) {
 						// release mutex
+						println(tid)
 						bp.Mutex.Unlock()
-						// abort transaction
 						bp.AbortTransaction(tid)
 						// throw error
 						return nil, GoDBError{code: DeadlockError, errString: "Transaction deadlocked"}
 					}
+					// println("Current Locks")
+					// for key, value := range bp.ExclusiveLocks {
+					// 	println(key, value)
+					// }
+					// println("I am waiting for: ", pageKey, exclusiveLockTid)
+					// for key, value := range bp.waitGraph {
+					// 	print(key, ": ")
+					// 	for _, val := range value {
+					// 		print(val.tid, " ")
+					// 	}
+					// 	println()
+					// }
+					println("here")
 					bp.Mutex.Unlock()
-					time.Sleep(time.Millisecond)
+					time.Sleep(5 * time.Microsecond)
 				} else {
 					break
 				}
@@ -274,6 +296,7 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 					}
 					// if cycle abort
 					if bp.detectCycle(tid) {
+						println(tid)
 						// release mutex
 						bp.Mutex.Unlock()
 						// abort transaction
@@ -282,7 +305,8 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 						return nil, GoDBError{code: DeadlockError, errString: "Transaction deadlocked"}
 					}
 					bp.Mutex.Unlock()
-					time.Sleep(time.Millisecond)
+					print("here1")
+					time.Sleep(5 * time.Microsecond)
 				}
 			} else {
 				// no locks just acquire the write lock
@@ -312,8 +336,9 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 						// throw error
 						return nil, GoDBError{code: DeadlockError, errString: "Transaction deadlocked"}
 					}
+					print("here3")
 					bp.Mutex.Unlock()
-					time.Sleep(1 * time.Millisecond)
+					time.Sleep(5 * time.Microsecond)
 				} else {
 					break
 				}

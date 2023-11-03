@@ -240,18 +240,18 @@ func (f *HeapFile) insertTuple(t *Tuple, tid TransactionID) error {
 // so you can supply any object you wish.  You will likely want to identify the
 // heap page and slot within the page that the tuple came from.
 func (f *HeapFile) deleteTuple(t *Tuple, tid TransactionID) error {
-	f.m.Lock()
+	// f.m.Lock()
 	Rid, _ := t.Rid.(RecordID)
 	pageNo := Rid.pageNo
 	p, getPageError := f.bufPool.GetPage(f, pageNo, tid, WritePerm)
 	h := (*p).(*heapPage)
 	if getPageError != nil {
-		f.m.Unlock()
+		// f.m.Unlock()
 		return getPageError
 	}
 	// call page.deleteTuple
 	h.deleteTuple(Rid)
-	f.m.Unlock()
+	// f.m.Unlock()
 	return nil //replace me
 }
 
