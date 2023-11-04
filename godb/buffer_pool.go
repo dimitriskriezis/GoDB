@@ -264,19 +264,6 @@ func (bp *BufferPool) GetPage(file DBFile, pageNo int, tid TransactionID, perm R
 						// throw error
 						return nil, GoDBError{code: DeadlockError, errString: "Transaction deadlocked"}
 					}
-					// println("Current Locks")
-					// for key, value := range bp.ExclusiveLocks {
-					// 	println(key, value)
-					// }
-					// println("I am waiting for: ", pageKey, exclusiveLockTid)
-					// for key, value := range bp.waitGraph {
-					// 	print(key, ": ")
-					// 	for _, val := range value {
-					// 		print(val.tid, " ")
-					// 	}
-					// 	println()
-					// }
-					// println("here")
 					bp.Mutex.Unlock()
 					time.Sleep(10 * time.Microsecond)
 				} else {

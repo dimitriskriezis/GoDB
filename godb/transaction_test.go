@@ -26,14 +26,6 @@ const numConcurrentThreads int = 20
 var c chan int = make(chan int, numConcurrentThreads*2)
 
 func readXaction(hf *HeapFile, bp *BufferPool, wg *sync.WaitGroup) {
-	// println("Waitgraph read")
-	// for key, value := range bp.waitGraph {
-	// 	print(key, ": ")
-	// 	for _, val := range value {
-	// 		print(val.tid, " ")
-	// 	}
-	// 	println()
-	// }
 	for {
 	start:
 		tid := NewTID()
@@ -83,14 +75,6 @@ func readXaction(hf *HeapFile, bp *BufferPool, wg *sync.WaitGroup) {
 
 func writeXaction(hf *HeapFile, bp *BufferPool, writeTuple Tuple, wg *sync.WaitGroup) {
 	// _, t1, _, _, _ := makeTestVars()
-	// println("Waitgraph write")
-	// for key, value := range bp.waitGraph {
-	// 	print(key, ": ")
-	// 	for _, val := range value {
-	// 		print(val.tid, " ")
-	// 	}
-	// 	println()
-	// }
 	for {
 	start:
 		tid := NewTID()

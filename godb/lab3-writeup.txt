@@ -1,0 +1,33 @@
+I implemented page level locking in the following way. I first added a buffer pool mutex to lock which transaction
+is acquiring a lock at each time. Then when a transaction is requesting a write lock, if another transaction holds either a write lock
+or a read lock on the page the transaction wants to get the lock of, the current transaction gives up the mutex lock and sleeps for a few microseconds 
+before attempting to reacquire the page lock. If on the other hand no transaction holds a lock on the page in question, or the current transaction
+is the only one holding a lock on the page in question the transaction gets the exclusive lock on the page.
+When a transaction is requesting a shared lock on a particular page, if another page holds an exlusive lock on that
+page then the transaction sleeps for a few microseconds before attempting to reacquire the lock. If only shared or no
+locks are held on that page then the transaction can acquire the lock.
+
+While committing a transaction I flush all pages edited by this transaction to disk and delete the pages from memory.
+Then I remove all shared and exclusive locks held by this transaction. While aborting a transaction I delete from the buffer pool all pages
+that the current transaction holds an exclusive lock on without writing to disk. Before committing or aborting the process the buffer pool
+mutex so that the current transaction is the only one that can modify the buffer pool page table.
+
+To implement insert and delete locking I did the following. First I added a heap file mutex to lock which transaction
+could modify the transaction each time. I then acquired the heapfile lock each time a transaction needed to add
+a new page to the heapfile so that only one transaction could modify the heapfile at a time.
+
+To detect cycles I used a wait-for graph on the transactions. More specifically I created a graph where each
+transaction represented a node and each transaction waiting on another transaction for a lock was represented by a directed edge
+from the transaction waiting to the transaction holding the lock. In GetPage, each time I found that a lock being held by
+another transaction prevented the current transaction from moving forward, I added an edge from the current
+transaction to the transaction holding the lock in question. After that I did a depth first search in the updated
+waitgraph starting from the current transaction marking each transaction node I visited. If the depth first search finds a child of the current transaction
+that has already been visited then I consider this a cycle and the detect cycle function returns true. If a cycle is detected
+I unlock the bufferpool mutex and abort the transaction. During commit or abort I also removed a transaction node and 
+edges representating transactions waiting on this transaction from the wait graph.
+
+Additionally, during commit and abort I remove a transaction node from the wait graph as well as every edge 
+representing another transaction waiting on the transaction being committed or aborted.
+
+Overall I spent around 15-20 hours working on this lab. The most difficult part of this lab was debugging the 
+the deadlocking issues.
