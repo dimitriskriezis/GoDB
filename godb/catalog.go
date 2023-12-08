@@ -160,8 +160,8 @@ func (c *Catalog) GetTable(named string) (DBFile, error) {
 	if t == nil {
 		return nil, GoDBError{NoSuchTableError, fmt.Sprintf("no table '%s' found", named)}
 	}
-	return NewHeapFile(c.tableNameToFile(named), t.desc.copy(), c.bp)
-
+	// return NewHeapFile(c.tableNameToFile(named), t.desc.copy(), c.bp)
+	return NewColumnFile(c.tableNameToFile(named), t.desc.copy(), c.bp)
 }
 
 func (c *Catalog) findTablesWithColumn(named string) []*Table {

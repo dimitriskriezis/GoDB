@@ -824,6 +824,7 @@ func makePhysicalPlan(c *Catalog, plan *LogicalPlan) (Operator, error) {
 			name = t.alias
 		}
 		var td *TupleDesc = (*t.file).Descriptor()
+		fmt.Printf("t1: %T\n", t.file)
 		td.setTableAlias(name)
 		//td = td.setTableAlias(name)
 		tableMap[name] = &PlanNode{*t.file, td}

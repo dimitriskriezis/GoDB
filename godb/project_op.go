@@ -1,5 +1,7 @@
 package godb
 
+import "fmt"
+
 type Project struct {
 	selectFields []Expr // required fields for parser
 	outputNames  []string
@@ -59,6 +61,7 @@ func (p *Project) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
 			Desc:   *p.Descriptor(),
 			Fields: fields,
 		}
+		fmt.Println(*td)
 		return td, nil
 	}, nil
 }

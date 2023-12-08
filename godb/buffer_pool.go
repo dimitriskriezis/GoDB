@@ -190,10 +190,6 @@ func (bp *BufferPool) AbortTransaction(tid TransactionID) {
 // WAL. You do not need to implement this for lab 1.
 func (bp *BufferPool) CommitTransaction(tid TransactionID) {
 	bp.Mutex.Lock()
-	// println("I am committing ", tid)
-	// for key, value := range bp.ExclusiveLocks {
-	// 	println(key, value)
-	// }
 	bp.removeTransactionFromWaitGraph(tid)
 	// flush each page tid edited to disk
 	for pageId, pageTid := range bp.ExclusiveLocks {

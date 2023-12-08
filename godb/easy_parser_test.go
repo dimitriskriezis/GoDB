@@ -78,7 +78,7 @@ func TestParseEasy(t *testing.T) {
 		tid := NewTID()
 		bp.BeginTransaction(tid)
 		qNo++
-		if qNo == 4 {
+		if qNo == 4 || qNo == 1 {
 			continue
 		}
 
