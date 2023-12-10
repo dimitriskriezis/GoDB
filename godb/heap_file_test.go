@@ -48,7 +48,7 @@ func TestCreateAndInsertHeapFile(t *testing.T) {
 	_, t1, t2, hf, _, tid := makeTestVars()
 	hf.insertTuple(&t1, tid)
 	hf.insertTuple(&t2, tid)
-	iter, _ := hf.Iterator(tid)
+	iter, _ := hf.Iterator(tid, hf.Descriptor())
 	i := 0
 	for {
 		t, _ := iter()
@@ -68,13 +68,13 @@ func TestDeleteHeapFile(t *testing.T) {
 	hf.insertTuple(&t2, tid)
 
 	hf.deleteTuple(&t1, tid)
-	iter, _ := hf.Iterator(tid)
+	iter, _ := hf.Iterator(tid, hf.Descriptor())
 	t3, _ := iter()
 	if t3 == nil {
 		t.Errorf("HeapFile iterator expected 1 tuple")
 	}
 	hf.deleteTuple(&t2, tid)
-	iter, _ = hf.Iterator(tid)
+	iter, _ = hf.Iterator(tid, hf.Descriptor())
 	t3, _ = iter()
 	if t3 != nil {
 		t.Errorf("HeapFile iterator expected 0 tuple")
@@ -122,7 +122,7 @@ func testSerializeN(t *testing.T, n int) {
 	hf2, _ := NewHeapFile(TestingFile, &td, bp2)
 	tid := NewTID()
 	bp2.BeginTransaction(tid)
-	iter, _ := hf2.Iterator(tid)
+	iter, _ := hf2.Iterator(tid, hf2.Descriptor())
 	i := 0
 	for {
 		t, _ := iter()
@@ -162,7 +162,7 @@ func TestLoadCSV(t *testing.T) {
 
 	//should have 384 records
 	fmt.Println("Number of pages in file: ", hf.NumPages())
-	iter, _ := hf.Iterator(tid)
+	iter, _ := hf.Iterator(tid, hf.Descriptor())
 	i := 0
 	for {
 		t, _ := iter()

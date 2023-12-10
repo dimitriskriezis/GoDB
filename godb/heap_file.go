@@ -297,7 +297,7 @@ func (f *HeapFile) Descriptor() *TupleDesc {
 // transactions
 // You should esnure that Tuples returned by this method have their Rid object
 // set appropriate so that [deleteTuple] will work (see additional comments there).
-func (f *HeapFile) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
+func (f *HeapFile) Iterator(tid TransactionID, Desc *TupleDesc) (func() (*Tuple, error), error) {
 	currentPage := 0
 	currentSlot := 0
 	return func() (*Tuple, error) {
@@ -340,4 +340,9 @@ func (f *HeapFile) pageKey(pgNo int) any {
 	pageKeyStruct := heapHash{FileName: f.fileName, PageNo: pgNo}
 	hash, _ := hashstructure.Hash(pageKeyStruct, hashstructure.FormatV2, nil)
 	return hash
+}
+
+// placeholder to make columnfiles clearing more modular
+func (hf *HeapFile) clearColumnFiles() any {
+	return nil
 }

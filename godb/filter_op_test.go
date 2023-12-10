@@ -14,7 +14,7 @@ func TestIntFilter(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	iter, err := filt.Iterator(tid)
+	iter, err := filt.Iterator(tid, filt.Descriptor())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -45,7 +45,7 @@ func TestStringFilter(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	iter, err := filt.Iterator(tid)
+	iter, err := filt.Iterator(tid, filt.Descriptor())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

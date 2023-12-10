@@ -52,7 +52,7 @@ func ImportCatalogFromCSVs(catalogFile string, bp *BufferPool, rootPath string, 
 	for _, t := range c.tables {
 		fmt.Printf("Doing %s\n", t.name)
 		fileName := rootPath + "/" + t.name + "." + tableSuffix
-		hf, err := NewHeapFile(c.tableNameToFile(t.name), t.desc.copy(), c.bp)
+		hf, err := NewColumnFile(c.tableNameToFile(t.name), t.desc.copy(), c.bp)
 		if err != nil {
 			return err
 		}
@@ -160,7 +160,6 @@ func (c *Catalog) GetTable(named string) (DBFile, error) {
 	if t == nil {
 		return nil, GoDBError{NoSuchTableError, fmt.Sprintf("no table '%s' found", named)}
 	}
-	// return NewHeapFile(c.tableNameToFile(named), t.desc.copy(), c.bp)
 	return NewColumnFile(c.tableNameToFile(named), t.desc.copy(), c.bp)
 }
 

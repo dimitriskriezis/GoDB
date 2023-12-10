@@ -86,8 +86,8 @@ func (ms *multiSorter) Less(i, j int) bool {
 // use this you will need to implement three methods:  Len, Swap, and Less that
 // the sort algorithm will invoke to preduce a sorted list. See the first
 // example, example of SortMultiKeys, and documentation at: https://pkg.go.dev/sort
-func (o *OrderBy) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
-	childIterator, _ := o.child.Iterator(tid)
+func (o *OrderBy) Iterator(tid TransactionID, desc *TupleDesc) (func() (*Tuple, error), error) {
+	childIterator, _ := o.child.Iterator(tid, o.child.Descriptor())
 	tuples := []*Tuple{}
 	for {
 		t, _ := childIterator()

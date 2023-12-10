@@ -1,6 +1,8 @@
 package godb
 
-import "golang.org/x/exp/constraints"
+import (
+	"golang.org/x/exp/constraints"
+)
 
 type Number interface {
 	constraints.Integer | constraints.Float
@@ -25,6 +27,9 @@ type AggState interface {
 
 	// Gets the tuple description of the tuple that Finalize() returns.
 	GetTupleDesc() *TupleDesc
+
+	// Gets the tupledesc of the expr
+	GetExprDesc() FieldType
 }
 
 // Implements the aggregation state for COUNT
@@ -32,6 +37,10 @@ type CountAggState struct {
 	alias string
 	expr  Expr
 	count int
+}
+
+func (a *CountAggState) GetExprDesc() FieldType {
+	return a.expr.GetExprType()
 }
 
 func (a *CountAggState) Copy() AggState {
@@ -71,6 +80,10 @@ type SumAggState[T Number] struct {
 	expr   Expr
 	sum    T
 	getter func(DBValue) any
+}
+
+func (a *SumAggState[T]) GetExprDesc() FieldType {
+	return a.expr.GetExprType()
 }
 
 func (a *SumAggState[T]) Copy() AggState {
@@ -127,6 +140,10 @@ type AvgAggState[T Number] struct {
 	getter func(DBValue) any
 }
 
+func (a *AvgAggState[T]) GetExprDesc() FieldType {
+	return a.expr.GetExprType()
+}
+
 func (a *AvgAggState[T]) Copy() AggState {
 	return &AvgAggState[T]{alias: a.alias, expr: a.expr, sum: a.sum, len: a.len, getter: a.getter}
 }
@@ -172,6 +189,10 @@ type MaxAggState[T constraints.Ordered] struct {
 	max    T
 	null   bool // whether the agg state have not seen any tuple inputted yet
 	getter func(DBValue) any
+}
+
+func (a *MaxAggState[T]) GetExprDesc() FieldType {
+	return a.expr.GetExprType()
 }
 
 func (a *MaxAggState[T]) Copy() AggState {
@@ -236,6 +257,10 @@ type MinAggState[T constraints.Ordered] struct {
 	min    T
 	null   bool // whether the agg state have not seen any tuple inputted yet
 	getter func(DBValue) any
+}
+
+func (a *MinAggState[T]) GetExprDesc() FieldType {
+	return a.expr.GetExprType()
 }
 
 func (a *MinAggState[T]) Copy() AggState {

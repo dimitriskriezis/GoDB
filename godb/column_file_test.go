@@ -46,7 +46,7 @@ func TestCreateAndInsertColumnFile(t *testing.T) {
 	_, t1, t2, cf, _, tid := makeCFTestVars()
 	cf.insertTuple(&t1, tid)
 	cf.insertTuple(&t2, tid)
-	iter, _ := cf.Iterator(tid)
+	iter, _ := cf.Iterator(tid, cf.Descriptor())
 	i := 0
 	for {
 		t, _ := iter()
@@ -66,13 +66,13 @@ func TestDeleteColumnFile(t *testing.T) {
 	cf.insertTuple(&t2, tid)
 
 	cf.deleteTuple(&t1, tid)
-	iter, _ := cf.Iterator(tid)
+	iter, _ := cf.Iterator(tid, cf.Descriptor())
 	t3, _ := iter()
 	if t3 == nil {
 		t.Errorf("HeapFile iterator expected 1 tuple")
 	}
 	cf.deleteTuple(&t2, tid)
-	iter, _ = cf.Iterator(tid)
+	iter, _ = cf.Iterator(tid, cf.Descriptor())
 	t3, _ = iter()
 	if t3 != nil {
 		t.Errorf("HeapFile iterator expected 0 tuple")
@@ -105,7 +105,7 @@ func testSerializeColumnFileN(t *testing.T, n int) {
 	cf2, _ := NewColumnFile(TestingFile, &td, bp2)
 	tid := NewTID()
 	bp2.BeginTransaction(tid)
-	iter, _ := cf2.Iterator(tid)
+	iter, _ := cf2.Iterator(tid, cf2.Descriptor())
 	i := 0
 	for {
 		t, _ := iter()
@@ -144,7 +144,7 @@ func TestLoadCSVColumnFile(t *testing.T) {
 	}
 
 	//should have 384 records
-	iter, _ := cf.Iterator(tid)
+	iter, _ := cf.Iterator(tid, cf.Descriptor())
 	i := 0
 	for {
 		t, _ := iter()

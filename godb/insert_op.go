@@ -26,8 +26,8 @@ func (i *InsertOp) Descriptor() *TupleDesc {
 // one-field tuple with a "count" field indicating the number of tuples that
 // were inserted.  Tuples should be inserted using the [DBFile.insertTuple]
 // method.
-func (iop *InsertOp) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
-	iterator, _ := iop.child.Iterator(tid)
+func (iop *InsertOp) Iterator(tid TransactionID, desc *TupleDesc) (func() (*Tuple, error), error) {
+	iterator, _ := iop.child.Iterator(tid, iop.Descriptor())
 	count := 0
 	return func() (*Tuple, error) {
 		for {

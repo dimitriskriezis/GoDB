@@ -25,8 +25,8 @@ func (i *DeleteOp) Descriptor() *TupleDesc {
 // one-field tuple with a "count" field indicating the number of tuples that
 // were deleted.  Tuples should be deleted using the [DBFile.deleteTuple]
 // method.
-func (dop *DeleteOp) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
-	iterator, _ := dop.child.Iterator(tid)
+func (dop *DeleteOp) Iterator(tid TransactionID, desc *TupleDesc) (func() (*Tuple, error), error) {
+	iterator, _ := dop.child.Iterator(tid, dop.Descriptor())
 	count := 0
 	return func() (*Tuple, error) {
 		for {

@@ -20,8 +20,8 @@ func (l *LimitOp) Descriptor() *TupleDesc {
 // Limit operator implementation. This function should iterate over the
 // results of the child iterator, and limit the result set to the first
 // [lim] tuples it sees (where lim is specified in the constructor).
-func (l *LimitOp) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
-	iterator, _ := l.child.Iterator(tid)
+func (l *LimitOp) Iterator(tid TransactionID, desc *TupleDesc) (func() (*Tuple, error), error) {
+	iterator, _ := l.child.Iterator(tid, l.child.Descriptor())
 	lim_dbval, _ := l.limitTups.EvalExpr(nil)
 	lim := int(lim_dbval.(IntField).Value)
 	i := 0

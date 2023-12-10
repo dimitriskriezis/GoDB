@@ -70,11 +70,11 @@ func (hj *EqualityJoin[T]) Descriptor() *TupleDesc {
 // maxBufferSize records, and should pass the testBigJoin test without timing
 // out.  To pass this test, you will need to use something other than a nested
 // loops join.
-func (joinOp *EqualityJoin[T]) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
+func (joinOp *EqualityJoin[T]) Iterator(tid TransactionID, desc *TupleDesc) (func() (*Tuple, error), error) {
 	leftIteratorPtr := *(joinOp.left)
-	leftIterator, _ := leftIteratorPtr.Iterator(tid)
+	leftIterator, _ := leftIteratorPtr.Iterator(tid, leftIteratorPtr.Descriptor())
 	rightIteratorPtr := *(joinOp.right)
-	rightIterator, _ := rightIteratorPtr.Iterator(tid)
+	rightIterator, _ := rightIteratorPtr.Iterator(tid, rightIteratorPtr.Descriptor())
 	leftTuple, _ := leftIterator()
 	return func() (*Tuple, error) {
 		// if we are done iterating over left:
@@ -88,7 +88,7 @@ func (joinOp *EqualityJoin[T]) Iterator(tid TransactionID) (func() (*Tuple, erro
 				if leftTuple == nil {
 					return nil, nil
 				}
-				rightIterator, _ = rightIteratorPtr.Iterator(tid)
+				rightIterator, _ = rightIteratorPtr.Iterator(tid, rightIteratorPtr.Descriptor())
 				continue
 			}
 			leftDBVal, _ := joinOp.leftField.EvalExpr(leftTuple)

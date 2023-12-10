@@ -270,7 +270,7 @@ func main() {
 			}
 			start := time.Now()
 
-			iter, err := plan.Iterator(tid)
+			iter, err := plan.Iterator(tid, plan.Descriptor())
 			if err != nil {
 				fmt.Printf("\033[31;1m%s\033[0m\n", err.Error())
 				continue

@@ -51,7 +51,7 @@ func testLimitCount(t *testing.T, n int) {
 		t.Fatalf("Op was nil")
 		return
 	}
-	iter, err := lim.Iterator(tid)
+	iter, err := lim.Iterator(tid, lim.Descriptor())
 	if err != nil {
 		t.Fatalf(err.Error())
 		return

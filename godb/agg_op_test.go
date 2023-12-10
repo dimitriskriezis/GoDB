@@ -13,7 +13,7 @@ func TestSimpleSumAgg(t *testing.T) {
 	expr := FieldExpr{t1.Desc.Fields[1]}
 	sa.Init("sum", &expr, intAggGetter)
 	agg := NewAggregator([]AggState{&sa}, hf)
-	iter, err := agg.Iterator(tid)
+	iter, err := agg.Iterator(tid, agg.Descriptor())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -41,7 +41,7 @@ func TestMinStringAgg(t *testing.T) {
 	expr := FieldExpr{t1.Desc.Fields[0]}
 	sa.Init("min", &expr, stringAggGetter)
 	agg := NewAggregator([]AggState{&sa}, hf)
-	iter, err := agg.Iterator(tid)
+	iter, err := agg.Iterator(tid, agg.Descriptor())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -69,7 +69,7 @@ func TestSimpleCountAgg(t *testing.T) {
 	expr := FieldExpr{t1.Desc.Fields[0]}
 	sa.Init("count", &expr, nil)
 	agg := NewAggregator([]AggState{&sa}, hf)
-	iter, err := agg.Iterator(tid)
+	iter, err := agg.Iterator(tid, agg.Descriptor())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -101,7 +101,7 @@ func TestMultiAgg(t *testing.T) {
 	sa.Init("sum", &expr, intAggGetter)
 
 	agg := NewAggregator([]AggState{&ca, &sa}, hf)
-	iter, err := agg.Iterator(tid)
+	iter, err := agg.Iterator(tid, agg.Descriptor())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -139,7 +139,7 @@ func TestGbyCountAgg(t *testing.T) {
 	sa.Init("count", &expr, nil)
 
 	agg := NewGroupedAggregator([]AggState{&sa}, gbyFields, hf)
-	iter, _ := agg.Iterator(tid)
+	iter, _ := agg.Iterator(tid, agg.Descriptor())
 	fields := []FieldType{
 		{"name", "", StringType},
 		{"count", "", IntType},
@@ -180,7 +180,7 @@ func TestGbySumAgg(t *testing.T) {
 	sa.Init("sum", &expr, intAggGetter)
 
 	agg := NewGroupedAggregator([]AggState{&sa}, gbyFields, hf)
-	iter, _ := agg.Iterator(tid)
+	iter, _ := agg.Iterator(tid, agg.Descriptor())
 
 	fields := []FieldType{
 		{"name", "", StringType},
@@ -224,7 +224,7 @@ func TestFilterCountAgg(t *testing.T) {
 	expr := FieldExpr{t1.Desc.Fields[0]}
 	sa.Init("count", &expr, nil)
 	agg := NewAggregator([]AggState{&sa}, filt)
-	iter, err := agg.Iterator(tid)
+	iter, err := agg.Iterator(tid, agg.Descriptor())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -252,7 +252,7 @@ func TestRepeatedIteration(t *testing.T) {
 	expr := FieldExpr{t1.Desc.Fields[0]}
 	sa.Init("count", &expr, nil)
 	agg := NewAggregator([]AggState{&sa}, hf)
-	iter, err := agg.Iterator(tid)
+	iter, err := agg.Iterator(tid, agg.Descriptor())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -270,7 +270,7 @@ func TestRepeatedIteration(t *testing.T) {
 	if cnt != 2 {
 		t.Errorf("unexpected count")
 	}
-	iter, err = agg.Iterator(tid)
+	iter, err = agg.Iterator(tid, agg.Descriptor())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

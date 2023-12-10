@@ -12,26 +12,30 @@ import (
 // Each column file has a descriptor desc of all the columns it contains
 // Each column file has an array of all the heapfiles that represent a column in the table
 type ColumnFile struct {
-	name        string
-	Desc        *TupleDesc
-	ColumnFiles []*HeapFile
-	bufPool     *BufferPool
+	name           string
+	Desc           *TupleDesc
+	ColumnFiles    []*HeapFile
+	bufPool        *BufferPool
+	ColumnFilesMap map[string]*HeapFile
 }
 
 func NewColumnFile(name string, td *TupleDesc, bp *BufferPool) (*ColumnFile, error) {
 	// make a new column file from
 	heapFiles := []*HeapFile{}
+	heapFilesMap := map[string]*HeapFile{}
 	for i := range td.Fields {
 		columnTd := &TupleDesc{Fields: []FieldType{td.Fields[i]}}
 		fromFile := name + "_" + td.Fields[i].Fname + ".dat"
 		columnHeapFile, _ := NewHeapFile(fromFile, columnTd, bp)
 		heapFiles = append(heapFiles, columnHeapFile)
+		heapFilesMap[td.Fields[i].Fname] = columnHeapFile
 	}
 	return &ColumnFile{
-		name:        name,
-		Desc:        td,
-		ColumnFiles: heapFiles,
-		bufPool:     bp,
+		name:           name,
+		Desc:           td,
+		ColumnFiles:    heapFiles,
+		bufPool:        bp,
+		ColumnFilesMap: heapFilesMap,
 	}, nil
 }
 
@@ -68,10 +72,11 @@ func (cf *ColumnFile) deleteTuple(t *Tuple, tid TransactionID) error {
 }
 
 // Iterator for early materialization
-func (cf *ColumnFile) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
+func (cf *ColumnFile) Iterator(tid TransactionID, selectDesc *TupleDesc) (func() (*Tuple, error), error) {
 	iterators := []func() (*Tuple, error){}
-	for _, f := range cf.ColumnFiles {
-		it, _ := f.Iterator(tid)
+	for _, field := range selectDesc.Fields {
+		f := cf.ColumnFilesMap[field.Fname]
+		it, _ := f.Iterator(tid, f.Descriptor())
 		iterators = append(iterators, it)
 	}
 	return func() (*Tuple, error) {
@@ -151,14 +156,26 @@ func (cf *ColumnFile) LoadFromCSV(file *os.File, hasHeader bool, sep string, ski
 	return nil
 }
 
+// placehodler function to implement DBFile
 func (cf *ColumnFile) flushPage(p *Page) error {
 	return nil
 }
 
+// Placeholder function to implement DBFile
 func (f *ColumnFile) pageKey(pgNo int) any {
 	return nil
 }
 
+// Placeholder function to implement DBFile
 func (f *ColumnFile) readPage(pageNo int) (*Page, error) {
 	return nil, nil
+}
+
+func (cf *ColumnFile) clearColumnFiles() any {
+	td := cf.Desc
+	for i := range td.Fields {
+		fromFile := cf.name + "_" + td.Fields[i].Fname + ".dat"
+		os.Remove(fromFile)
+	}
+	return nil
 }

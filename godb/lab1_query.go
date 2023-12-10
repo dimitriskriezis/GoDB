@@ -31,7 +31,7 @@ func computeFieldSum(fileName string, td TupleDesc, sumField string) (int, error
 	if loadCsvError != nil {
 		return 0, loadCsvError
 	}
-	iterator, _ := f.Iterator(tid)
+	iterator, _ := f.Iterator(tid, f.Descriptor())
 	sum := 0
 	for {
 		t, _ := iterator()

@@ -126,7 +126,7 @@ func TestJoinFieldOrder(t *testing.T) {
 		t.Errorf("unexpected error initializing join")
 		return
 	}
-	iter, err := join.Iterator(tid)
+	iter, err := join.Iterator(tid, join.Descriptor())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -170,7 +170,7 @@ func TestOrderByFieldsOrder(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	iter, _ := oby.Iterator(tid)
+	iter, _ := oby.Iterator(tid, oby.Descriptor())
 	if iter == nil {
 		t.Fatalf("iter was nil")
 	}
@@ -205,7 +205,7 @@ func TestProjectOrdering(t *testing.T) {
 	if proj == nil {
 		t.Fatalf("project was nil")
 	}
-	iter, _ := proj.Iterator(tid)
+	iter, _ := proj.Iterator(tid, proj.Descriptor())
 	if iter == nil {
 		t.Fatalf("iter was nil")
 	}
@@ -358,13 +358,13 @@ func TestHeapFileIteratorExtra(t *testing.T) {
 	tid := NewTID()
 	bp.BeginTransaction(tid)
 
-	it, err := hf.Iterator(tid)
+	it, err := hf.Iterator(tid, hf.Descriptor())
 	_, err = it()
 	if err != nil {
 		t.Fatalf("Empty heap file iterator should return nil,nil")
 	}
 	hf.insertTuple(&t1, tid)
-	it, err = hf.Iterator(tid)
+	it, err = hf.Iterator(tid, hf.Descriptor())
 	pg, err := it()
 	if err != nil {
 		t.Fatalf("Iterating over heap file with one tuple returned error %s", err.Error())
