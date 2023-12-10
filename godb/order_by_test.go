@@ -25,7 +25,7 @@ func TestOrderBy(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	iter, _ := oby.Iterator(tid)
+	iter, _ := oby.Iterator(tid, oby.Descriptor())
 	if iter == nil {
 		t.Fatalf("iter was nil")
 	}
@@ -54,7 +54,7 @@ func TestOrderBy(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	iter, _ = oby.Iterator(tid)
+	iter, _ = oby.Iterator(tid, oby.Descriptor())
 	last = ""
 	for {
 		tup, _ := iter()
@@ -134,7 +134,7 @@ func TestMultiFieldOrderBy(t *testing.T) {
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
-		iter, _ := oby.Iterator(tid)
+		iter, _ := oby.Iterator(tid, oby.Descriptor())
 		if iter == nil {
 			t.Fatalf("iter was nil")
 		}

@@ -30,7 +30,7 @@ func readXaction(hf *HeapFile, bp *BufferPool, wg *sync.WaitGroup) {
 	start:
 		tid := NewTID()
 		bp.BeginTransaction(tid)
-		it, _ := hf.Iterator(tid)
+		it, _ := hf.Iterator(tid, hf.Descriptor())
 		cnt1 := 0
 
 		for {
@@ -46,7 +46,7 @@ func readXaction(hf *HeapFile, bp *BufferPool, wg *sync.WaitGroup) {
 			cnt1++
 		}
 
-		it, _ = hf.Iterator(tid)
+		it, _ = hf.Iterator(tid, hf.Descriptor())
 		cnt2 := 0
 		for {
 			t, err := it()
@@ -228,7 +228,7 @@ func (i *Singleton) Descriptor() *TupleDesc {
 	return &i.tup.Desc
 }
 
-func (i *Singleton) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
+func (i *Singleton) Iterator(tid TransactionID, desc *TupleDesc) (func() (*Tuple, error), error) {
 	return func() (*Tuple, error) {
 		if i.ran {
 			return nil, nil
@@ -259,7 +259,7 @@ func validateTransactions(t *testing.T, threads int) {
 		for tid := TransactionID(nil); ; bp.AbortTransaction(tid) {
 			tid = NewTID()
 			bp.BeginTransaction(tid)
-			iter1, err := hf.Iterator(tid)
+			iter1, err := hf.Iterator(tid, hf.Descriptor())
 			if err != nil {
 				continue
 			}
@@ -279,7 +279,7 @@ func validateTransactions(t *testing.T, threads int) {
 			time.Sleep(1 * time.Millisecond)
 
 			dop := NewDeleteOp(hf, hf)
-			iterDel, err := dop.Iterator(tid)
+			iterDel, err := dop.Iterator(tid, dop.Descriptor())
 			if err != nil {
 				continue
 			}
@@ -291,7 +291,7 @@ func validateTransactions(t *testing.T, threads int) {
 				t.Errorf("Delete Op should return 1")
 			}
 			iop := NewInsertOp(hf, &Singleton{writeTup, false})
-			iterIns, err := iop.Iterator(tid)
+			iterIns, err := iop.Iterator(tid, iop.Descriptor())
 			if err != nil {
 				continue
 			}
@@ -328,7 +328,7 @@ func validateTransactions(t *testing.T, threads int) {
 
 	tid := NewTID()
 	bp.BeginTransaction(tid)
-	iter, _ := hf.Iterator(tid)
+	iter, _ := hf.Iterator(tid, hf.Descriptor())
 	tup, _ := iter()
 
 	diff := tup.Fields[1].(IntField).Value - t2.Fields[1].(IntField).Value
@@ -384,7 +384,7 @@ func TestAllDirtyFails(t *testing.T) {
 
 func TestAbortEviction(t *testing.T) {
 	tupExists := func(t0 Tuple, tid TransactionID, hf *HeapFile) (bool, error) {
-		iter, err := hf.Iterator(tid)
+		iter, err := hf.Iterator(tid, hf.Descriptor())
 		if err != nil {
 			return false, err
 		}

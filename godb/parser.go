@@ -711,7 +711,7 @@ func opToStr(op BoolOp) string {
 }
 
 // following is absolute grossness because we forgot to ask students
-// to expose heapfile name
+// to expose ColumnFile name
 func GetUnexportedField(field reflect.Value) interface{} {
 	return reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Interface()
 }
@@ -766,7 +766,7 @@ func PrintPhysicalPlan(o Operator, indent string) {
 		fmt.Printf("%sFilter %s %s %s\n", indent, exprToStr(op.left), opToStr(op.op), exprToStr(op.right))
 		indent = indent + "\t"
 		PrintPhysicalPlan(op.child, indent)
-	case *HeapFile:
+	case *ColumnFile:
 		fmt.Printf("%sHeap Scan %v\n", indent, getStrFromObj(op))
 	case *OrderBy:
 		orderStr := ""
@@ -824,7 +824,7 @@ func makePhysicalPlan(c *Catalog, plan *LogicalPlan) (Operator, error) {
 			name = t.alias
 		}
 		var td *TupleDesc = (*t.file).Descriptor()
-		fmt.Printf("t1: %T\n", t.file)
+		// fmt.Printf("t1: %T\n", t.file)
 		td.setTableAlias(name)
 		//td = td.setTableAlias(name)
 		tableMap[name] = &PlanNode{*t.file, td}
@@ -1302,6 +1302,7 @@ func Parse(c *Catalog, query string) (QueryType, Operator, error) {
 			//fmt.Printf("Err: %s\n", err.Error())
 			return UnknownQueryType, nil, err
 		}
+		// fmt.Printf("What : %T\n", op)
 		return IteratorType, op, nil
 	case *sqlparser.Insert:
 		op, err := parseInsert(c, stmt)

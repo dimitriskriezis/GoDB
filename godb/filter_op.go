@@ -56,8 +56,8 @@ func (f *Filter[T]) Descriptor() *TupleDesc {
 // the results of the child iterator and return a tuple if it satisfies
 // the predicate.
 // HINT: you can use the evalPred function defined in types.go to compare two values
-func (f *Filter[T]) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
-	opIterator, _ := f.child.Iterator(tid)
+func (f *Filter[T]) Iterator(tid TransactionID, desc *TupleDesc) (func() (*Tuple, error), error) {
+	opIterator, _ := f.child.Iterator(tid, f.Descriptor())
 	return func() (*Tuple, error) {
 		for {
 			t, _ := opIterator()

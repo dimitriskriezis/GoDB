@@ -1,5 +1,9 @@
 package godb
 
+import (
+	"slices"
+)
+
 type Aggregator struct {
 	// Expressions that when applied to tuples from the child operators,
 	// respectively, return the value of the group by key tuple
@@ -57,9 +61,21 @@ func (a *Aggregator) Descriptor() *TupleDesc {
 // and the iterator should iterate through each group's result. In the case where there
 // is no group-by, the iterator simply iterates through only one tuple, representing the
 // aggregation of all child tuples.
-func (a *Aggregator) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
+func (a *Aggregator) Iterator(tid TransactionID, desc *TupleDesc) (func() (*Tuple, error), error) {
+	selectDesc := []FieldType{}
+	for i := range a.newAggState {
+		if !slices.Contains(selectDesc, a.newAggState[i].GetExprDesc()) {
+			selectDesc = append(selectDesc, a.newAggState[i].GetExprDesc())
+		}
+	}
+
+	for i := range a.groupByFields {
+		if !slices.Contains(selectDesc, a.groupByFields[i].GetExprType()) {
+			selectDesc = append(selectDesc, a.groupByFields[i].GetExprType())
+		}
+	}
 	// the child iterator
-	childIter, err := a.child.Iterator(tid)
+	childIter, err := a.child.Iterator(tid, &TupleDesc{Fields: selectDesc})
 	if err != nil {
 		return nil, err
 	}

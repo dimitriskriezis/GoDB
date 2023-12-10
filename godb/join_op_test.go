@@ -29,7 +29,7 @@ func TestJoin(t *testing.T) {
 		t.Errorf("unexpected error initializing join")
 		return
 	}
-	iter, err := join.Iterator(tid)
+	iter, err := join.Iterator(tid, join.Descriptor())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -159,7 +159,7 @@ func TestBigJoinOptional(t *testing.T) {
 			t.Errorf("unexpected error initializing join")
 			return
 		}
-		iter, err := join.Iterator(tid)
+		iter, err := join.Iterator(tid, join.Descriptor())
 		if err != nil {
 			t.Errorf(err.Error())
 			return

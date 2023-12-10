@@ -17,7 +17,7 @@ func TestProject(t *testing.T) {
 	if proj == nil {
 		t.Fatalf("project was nil")
 	}
-	iter, _ := proj.Iterator(tid)
+	iter, _ := proj.Iterator(tid, proj.Descriptor())
 	if iter == nil {
 		t.Fatalf("iter was nil")
 	}
@@ -47,7 +47,7 @@ func TestProjectDistinctOptional(t *testing.T) {
 	if proj == nil {
 		t.Fatalf("project was nil")
 	}
-	iter, _ := proj.Iterator(tid)
+	iter, _ := proj.Iterator(tid, proj.Descriptor())
 	if iter == nil {
 		t.Fatalf("iter was nil")
 	}

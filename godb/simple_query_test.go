@@ -16,6 +16,8 @@ func TestSimpleQuery(t *testing.T) {
 		t.Fatalf("failed load catalog, %s", err.Error())
 	}
 	hf1, err := c.GetTable("t")
+	// cf := hf1.(*ColumnFile)
+
 	if err != nil {
 		t.Fatalf("no table t, %s", err.Error())
 	}
@@ -46,7 +48,7 @@ func TestSimpleQuery(t *testing.T) {
 	agg := NewAggregator([]AggState{&sa}, filterOp)
 	tid := NewTID()
 	bp.BeginTransaction(tid)
-	f, err := agg.Iterator(tid)
+	f, err := agg.Iterator(tid, agg.Descriptor())
 	if err != nil {
 		t.Fatalf("failed to get iterator, %s", err.Error())
 	}

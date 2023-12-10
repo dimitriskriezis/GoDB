@@ -26,7 +26,7 @@ func (v *ValueOp) Descriptor() *TupleDesc {
 	return v.td
 }
 
-func (v *ValueOp) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
+func (v *ValueOp) Iterator(tid TransactionID, desc *TupleDesc) (func() (*Tuple, error), error) {
 	curTup := 0
 	return func() (*Tuple, error) {
 		if curTup >= len(v.exprs) {

@@ -1,7 +1,5 @@
 package godb
 
-import "fmt"
-
 type Project struct {
 	selectFields []Expr // required fields for parser
 	outputNames  []string
@@ -45,8 +43,8 @@ func (p *Project) Descriptor() *TupleDesc {
 // To implement this you will need to record in some data structure with the
 // distinct tuples seen so far.  Note that support for the distinct keyword is
 // optional as specified in the lab 2 assignment.
-func (p *Project) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
-	childIterator, _ := p.child.Iterator(tid)
+func (p *Project) Iterator(tid TransactionID, desc *TupleDesc) (func() (*Tuple, error), error) {
+	childIterator, _ := p.child.Iterator(tid, p.Descriptor())
 	return func() (*Tuple, error) {
 		t, _ := childIterator()
 		if t == nil {
@@ -61,7 +59,6 @@ func (p *Project) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
 			Desc:   *p.Descriptor(),
 			Fields: fields,
 		}
-		fmt.Println(*td)
 		return td, nil
 	}, nil
 }

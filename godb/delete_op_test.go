@@ -20,7 +20,7 @@ func TestDelete(t *testing.T) {
 	}
 	tid = NewTID()
 	bp.BeginTransaction(tid)
-	iter, _ := dop.Iterator(tid)
+	iter, _ := dop.Iterator(tid, dop.Descriptor())
 	if iter == nil {
 		t.Fatalf("iter was nil")
 	}
@@ -43,7 +43,7 @@ func TestDelete(t *testing.T) {
 	tid = NewTID()
 	bp.BeginTransaction(tid)
 
-	iter, _ = hf.Iterator(tid)
+	iter, _ = hf.Iterator(tid, hf.Descriptor())
 
 	cnt := 0
 	for {
