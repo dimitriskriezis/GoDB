@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// Function to make validation database
 func MakeValidationDataset() error {
 	td := TupleDesc{Fields: []FieldType{}}
 	for i := 0; i < 500; i++ {
@@ -41,6 +42,7 @@ func MakeValidationDataset() error {
 	return nil
 }
 
+// Function to make column oriented transitdb database
 func MakeColumnOrientedTransitDatabase() error {
 	gated_station_entries := TupleDesc{Fields: []FieldType{
 		{Fname: "service_date", Ftype: StringType},
@@ -121,6 +123,7 @@ type ColumnFile struct {
 	ColumnFilesMap map[string]*HeapFile
 }
 
+// Function to make a new column file
 func NewColumnFile(name string, td *TupleDesc, bp *BufferPool) (*ColumnFile, error) {
 	// make a new column file from
 	heapFiles := []*HeapFile{}
