@@ -157,3 +157,61 @@ func TestLoadCSVColumnFile(t *testing.T) {
 		t.Errorf("HeapFile iterator expected 384 tuples, got %d", i)
 	}
 }
+
+func TestReadTwoColumn(t *testing.T) {
+	td := TupleDesc{Fields: []FieldType{
+		{Fname: "route_id", Ftype: IntType},
+		{Fname: "line_id", Ftype: StringType},
+		{Fname: "first_station_id", Ftype: StringType},
+		{Fname: "last_station_id", Ftype: StringType},
+		{Fname: "direction", Ftype: IntType},
+		{Fname: "direction_desc", Ftype: StringType},
+		{Fname: "route_name", Ftype: StringType}}}
+
+	bp := NewBufferPool(20)
+	cf, _ := NewColumnFile("transitdb/routes.dat", &td, bp)
+
+	selectDesc := TupleDesc{Fields: []FieldType{
+		{Fname: "first_station_id", Ftype: StringType},
+		{Fname: "last_station_id", Ftype: StringType},
+	}}
+	iter, _ := cf.Iterator(NewTID(), &selectDesc)
+	i := 0
+	for {
+		tup, _ := iter()
+		if tup == nil {
+			break
+		}
+		if len(tup.Fields) != 2 {
+			t.Errorf("ColumnFile expected 2 columns got %d", len(tup.Fields))
+		}
+		i = i + 1
+	}
+	if i != 18 {
+		t.Errorf("HeapFile iterator expected 18 tuples, got %d", i)
+	}
+}
+
+func TestEachColumnHasOneTuple(t *testing.T) {
+	td := TupleDesc{Fields: []FieldType{
+		{Fname: "route_id", Ftype: IntType},
+	}}
+
+	bp := NewBufferPool(20)
+	hf, _ := NewHeapFile("transitdb/routes.dat_route_id.dat", &td, bp)
+	iter, _ := hf.Iterator(NewTID(), &td)
+	i := 0
+	for {
+		tup, _ := iter()
+		if tup == nil {
+			break
+		}
+		if len(tup.Fields) != 1 {
+			t.Errorf("ColumnFile expected 1 columns got %d", len(tup.Fields))
+		}
+		i = i + 1
+	}
+	if i != 18 {
+		t.Errorf("HeapFile iterator expected 18 tuples, got %d", i)
+	}
+}

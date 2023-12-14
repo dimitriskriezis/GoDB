@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+// func TestMakeTransitDB(t *testing.T) {
+// 	MakeColumnOrientedTransitDatabase()
+// }
+
 func MakeTestDatabaseEasy(bp *BufferPool) error {
 	var td = TupleDesc{Fields: []FieldType{
 		{Fname: "name", Ftype: StringType},
@@ -82,7 +86,7 @@ func TestParseEasy(t *testing.T) {
 		tid := NewTID()
 		bp.BeginTransaction(tid)
 		qNo++
-		if qNo == 4 || qNo == 1 || qNo == 6 || qNo == 7 {
+		if qNo == 1 || qNo == 4 {
 			continue
 		}
 
@@ -99,7 +103,7 @@ func TestParseEasy(t *testing.T) {
 			continue
 		}
 
-		var outfile *ColumnFile
+		var outfile *HeapFile
 		var outfile_csv *os.File
 		var resultSet []*Tuple
 		fname := fmt.Sprintf("savedresults/q%d-easy-result.csv", qNo)
@@ -122,7 +126,7 @@ func TestParseEasy(t *testing.T) {
 				return
 			}
 
-			outfile, _ = NewColumnFile(fname_bin, desc, bp)
+			outfile, _ = NewHeapFile(fname_bin, desc, bp)
 			if outfile == nil {
 				t.Errorf("ColumnFile was nil")
 				return

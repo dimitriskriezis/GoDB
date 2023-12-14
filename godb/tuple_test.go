@@ -2,17 +2,21 @@ package godb
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 )
 
 func CheckIfOutputMatches(f func() (*Tuple, error), ts []*Tuple) bool {
+	for _, tup := range ts {
+		fmt.Println("Correct Output: ", tup)
+	}
 	n := 0
 	for {
 		t1, _ := f()
 		if t1 == nil {
 			break
 		}
-		//		fmt.Printf("%v\n", t1)
+		fmt.Printf("%v\n", t1)
 		got := false
 		for _, t2 := range ts {
 			if t1.equals(t2) {

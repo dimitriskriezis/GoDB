@@ -5,7 +5,7 @@ import (
 )
 
 func TestDelete(t *testing.T) {
-	_, t1, t2, hf, bp, tid := makeTestVars()
+	_, t1, t2, hf, bp, tid := makeCFTestVars()
 	hf.insertTuple(&t1, tid)
 	hf.insertTuple(&t2, tid)
 	bp.CommitTransaction(tid)

@@ -5,7 +5,7 @@ import (
 )
 
 func TestSimpleSumAgg(t *testing.T) {
-	_, t1, t2, hf, _, tid := makeTestVars()
+	_, t1, t2, hf, _, tid := makeCFTestVars()
 
 	hf.insertTuple(&t1, tid)
 	hf.insertTuple(&t2, tid)
@@ -34,7 +34,7 @@ func TestSimpleSumAgg(t *testing.T) {
 }
 
 func TestMinStringAgg(t *testing.T) {
-	_, t1, t2, hf, _, tid := makeTestVars()
+	_, t1, t2, hf, _, tid := makeCFTestVars()
 	hf.insertTuple(&t1, tid)
 	hf.insertTuple(&t2, tid)
 	sa := MinAggState[string]{}
@@ -127,7 +127,7 @@ func TestMultiAgg(t *testing.T) {
 }
 
 func TestGbyCountAgg(t *testing.T) {
-	_, t1, t2, hf, _, tid := makeTestVars()
+	_, t1, t2, hf, _, tid := makeCFTestVars()
 	hf.insertTuple(&t1, tid)
 	hf.insertTuple(&t2, tid)
 	hf.insertTuple(&t2, tid)

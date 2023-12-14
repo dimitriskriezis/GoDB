@@ -5,7 +5,7 @@ import (
 )
 
 func TestProject(t *testing.T) {
-	_, t1, t2, hf, _, tid := makeTestVars()
+	_, t1, t2, hf, _, tid := makeCFTestVars()
 	hf.insertTuple(&t1, tid)
 	hf.insertTuple(&t2, tid)
 	//fs := make([]FieldType, 1)
@@ -32,7 +32,7 @@ func TestProject(t *testing.T) {
 }
 
 func TestProjectDistinctOptional(t *testing.T) {
-	_, t1, t2, hf, _, tid := makeTestVars()
+	_, t1, t2, hf, _, tid := makeCFTestVars()
 	hf.insertTuple(&t1, tid)
 	hf.insertTuple(&t2, tid)
 	hf.insertTuple(&t1, tid)

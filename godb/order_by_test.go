@@ -8,7 +8,7 @@ import (
 // test the order by operator, by asking it to sort the test database
 // in ascending and descending order and verifying the result
 func TestOrderBy(t *testing.T) {
-	_, t1, t2, hf, _, tid := makeTestVars()
+	_, t1, t2, hf, _, tid := makeCFTestVars()
 	hf.insertTuple(&t1, tid)
 	hf.insertTuple(&t2, tid)
 	bs := make([]bool, 2)

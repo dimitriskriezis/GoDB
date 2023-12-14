@@ -9,7 +9,7 @@ import (
 const JoinTestFile string = "JoinTestFile.dat"
 
 func TestJoin(t *testing.T) {
-	td, t1, t2, hf, bp, tid := makeTestVars()
+	td, t1, t2, hf, bp, tid := makeCFTestVars()
 	hf.insertTuple(&t1, tid)
 	hf.insertTuple(&t2, tid)
 	hf.insertTuple(&t2, tid)
